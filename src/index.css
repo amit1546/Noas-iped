@@ -1,0 +1,67 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --canvas: 246 245 251;
+  --surface: 255 255 255;
+  --ink: 24 22 43;
+  --muted: 112 108 136;
+  --line: 232 230 242;
+  color-scheme: light;
+}
+
+.dark {
+  --canvas: 15 14 26;
+  --surface: 27 25 43;
+  --ink: 240 238 250;
+  --muted: 160 156 185;
+  --line: 45 42 66;
+  color-scheme: dark;
+}
+
+html,
+body {
+  @apply bg-canvas text-ink font-sans antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  min-height: 100dvh;
+}
+
+input,
+select,
+textarea {
+  font-size: 16px; /* prevent iOS zoom on focus */
+}
+
+@layer components {
+  .card {
+    @apply bg-surface rounded-3xl shadow-soft border border-line/60;
+  }
+  .input {
+    @apply w-full rounded-2xl border border-line bg-canvas px-4 py-3 text-ink outline-none transition
+      placeholder:text-muted/70 focus:border-violet-400 focus:ring-4 focus:ring-violet-400/15;
+  }
+  .label {
+    @apply mb-1.5 block text-sm font-medium text-muted;
+  }
+  .btn {
+    @apply inline-flex min-h-[44px] items-center justify-center gap-2 rounded-2xl px-5 font-semibold transition
+      active:scale-[0.97] disabled:opacity-50;
+  }
+  .btn-ghost {
+    @apply btn bg-canvas text-ink hover:bg-line/60;
+  }
+  .chip {
+    @apply inline-flex min-h-[36px] items-center gap-1 rounded-full border border-line px-3 text-sm font-medium transition;
+  }
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}

@@ -1,0 +1,35 @@
+import type { Meal, Workout } from '../db/schema';
+
+export interface DayTotals {
+  calories: number;
+  protein: number;
+}
+
+export function sumMeals(meals: Pick<Meal, 'calories' | 'protein'>[]): DayTotals {
+  return meals.reduce(
+    (acc, m) => ({ calories: acc.calories + (m.calories || 0), protein: acc.protein + (m.protein || 0) }),
+    { calories: 0, protein: 0 },
+  );
+}
+
+export type CalorieStatus = 'under' | 'near' | 'over';
+
+/** near = within the last 10% before the goal; over = above the goal. */
+export function calorieStatus(eaten: number, goal: number): CalorieStatus {
+  if (goal <= 0) return 'under';
+  if (eaten > goal) return 'over';
+  if (eaten >= goal * 0.9) return 'near';
+  return 'under';
+}
+
+export function workoutVolume(w: Pick<Workout, 'exercises'>): number {
+  return w.exercises.reduce(
+    (acc, ex) => acc + ex.sets.reduce((s, set) => s + (set.reps || 0) * (set.weight || 0), 0),
+    0,
+  );
+}
+
+export function average(nums: number[]): number {
+  if (!nums.length) return 0;
+  return nums.reduce((a, b) => a + b, 0) / nums.length;
+}

@@ -3,9 +3,8 @@ import { useEffect, useState } from 'react';
 import { setBodyWeight, useBodyWeights } from '../db/queries';
 import { formatShort, todayISO } from '../lib/dates';
 import { daysSince, downloadICS, weeklyReminderICS } from '../lib/reminder';
-import { Card } from './ui';
 
-export function WeightCard() {
+export function WeightEntry() {
   const weights = useBodyWeights();
   const today = todayISO();
   const [date, setDate] = useState(today);
@@ -31,13 +30,13 @@ export function WeightCard() {
       weekday: new Date().getDay(),
       hour: 8,
       minute: 0,
-      url: location.href.split('#')[0] + '#/plan',
+      url: location.href.split('#')[0] + '#/dashboard',
     });
     downloadICS(ics, 'weekly-weigh-in.ics');
   };
 
   return (
-    <Card className="p-4">
+    <div>
       <form onSubmit={save} className="flex flex-wrap items-center gap-2">
         <Scale size={18} className="shrink-0 text-muted" />
         <span className="shrink-0 font-semibold">משקל</span>
@@ -83,6 +82,6 @@ export function WeightCard() {
           <BellRing size={15} /> תזכורת שבועית ביומן
         </button>
       </div>
-    </Card>
+    </div>
   );
 }

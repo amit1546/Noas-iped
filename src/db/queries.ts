@@ -79,13 +79,6 @@ export const useWorkoutsBetween = (from: ISODate, to: ISODate) =>
 export const useWorkoutsOn = (date: ISODate) =>
   useLiveQuery(() => db.workouts.where('date').equals(date).toArray(), [date]) ?? [];
 
-/** Distinct workout names used before, for quick suggestions. */
-export const useWorkoutNames = () =>
-  useLiveQuery(async () => {
-    const all = await db.workouts.toArray();
-    return [...new Set(all.map((w) => w.title).filter(Boolean))];
-  }, []) ?? [];
-
 export const addWorkout = (w: { title: string; date: ISODate; time?: string }) =>
   db.workouts.add({ ...w, type: 'other', durationMin: 0, exercises: [], done: false });
 

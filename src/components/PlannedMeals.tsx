@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { CalendarPlus, Check, Trash2 } from 'lucide-react';
 import { deleteMeal, updateMeal } from '../db/queries';
 import { MEAL_TYPE_LABELS, MEAL_TYPE_ORDER, type Meal } from '../db/schema';
+import { OptionalTime } from './OptionalTime';
 import { IconButton } from './ui';
 
 export const byMealTime = (a: Meal, b: Meal) =>
@@ -35,13 +36,7 @@ export function PlannedMeals({ meals, hint = true }: { meals: Meal[]; hint?: boo
             exit={{ opacity: 0, height: 0 }}
             className="flex items-center gap-2 rounded-2xl border border-dashed border-sky-300 bg-sky-50/60 py-1.5 pe-1 ps-2 dark:border-sky-500/40 dark:bg-sky-500/5"
           >
-            <input
-              type="time"
-              value={m.time ?? ''}
-              onChange={(e) => updateMeal(m.id!, { time: e.target.value || undefined })}
-              className="w-[108px] shrink-0 rounded-xl border border-line bg-surface px-1.5 py-1.5 text-center text-sm font-semibold tabular-nums"
-              aria-label={`שעה ל${m.name}`}
-            />
+            <OptionalTime value={m.time ?? ''} onChange={(v) => updateMeal(m.id!, { time: v || undefined })} label={`שעה ל${m.name}`} />
             <span className="min-w-0 flex-1">
               <span className="block truncate font-semibold">{m.name}</span>
               <span className="text-xs text-muted">

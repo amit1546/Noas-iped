@@ -14,19 +14,19 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { Card, CardTitle, EmptyState, PageHeader, Stat } from '../components/ui';
+import { Card, CardTitle, EmptyState, PageHeader } from '../components/ui';
+import { WeightEntry } from '../components/WeightCard';
 import {
   useAllHabitLogs,
   useBodyWeights,
   useHabits,
   useMealsBetween,
   useSettings,
-  useTasksBetween,
   useWorkoutsBetween,
 } from '../db/queries';
 import { formatShort, rangeISO, shiftISO, todayISO, weekdayShort } from '../lib/dates';
 import { isScheduled } from '../lib/streaks';
-import { average, sumMeals } from '../lib/stats';
+import { sumMeals } from '../lib/stats';
 
 const tooltipStyle = {
   contentStyle: {
@@ -47,9 +47,7 @@ export function Dashboard() {
   const habits = useHabits();
   const logs = useAllHabitLogs();
   const meals = useMealsBetween(from, today);
-  const tasks = useTasksBetween(from, today);
   const workouts = useWorkoutsBetween(from, today);
-  const doneWorkouts = workouts.filter(isWorkoutDone);
   const workoutLog = [...workouts].sort((a, b) => b.date.localeCompare(a.date) || (b.time ?? '').localeCompare(a.time ?? ''));
   const weights = useBodyWeights();
 
@@ -70,31 +68,10 @@ export function Dashboard() {
 
 
   const weightData = weights.slice(-30).map((w) => ({ date: formatShort(w.date), kg: w.kg }));
-  const habitAvg = Math.round(average(habitDays.filter((d) => d.total > 0).map((d) => d.pct)));
 
   return (
     <>
       <PageHeader title="סיכום" subtitle="7 הימים האחרונים" accent="sky" icon={<LayoutDashboard />} />
-
-      <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-        <Stat label="השלמת הרגלים" value={`${habitAvg}%`} />
-        <Stat
-          label="אימונים שבוצעו"
-          value={doneWorkouts.length}
-          sub={workouts.length > doneWorkouts.length ? `מתוך ${workouts.length} מתוכננים` : 'אימונים'}
-        />
-        <Stat label="משימות שהושלמו" value={`${tasks.filter((t) => t.done).length}/${tasks.length}`} />
-        <Stat
-          label="ממוצע קלוריות"
-          value={Math.round(average(loggedCalorieDays.map((d) => d.calories))).toLocaleString('he-IL')}
-          sub={`יעד: ${settings.calorieGoal.toLocaleString('he-IL')}`}
-        />
-        <Stat
-          label="משקל אחרון"
-          value={weights.length ? weights[weights.length - 1].kg : '—'}
-          sub={weights.length > 1 ? diffLabel(weights[weights.length - 1].kg - weights[0].kg) : 'ק״ג'}
-        />
-      </div>
 
       <div className="grid gap-5 lg:grid-cols-2">
         <Card>
@@ -198,8 +175,11 @@ export function Dashboard() {
               </ResponsiveContainer>
             </div>
           ) : (
-            <EmptyState emoji="⚖️" title="רשום משקל לפחות פעמיים כדי לראות מגמה" text="אפשר לעשות את זה במסך התכנון" />
+            <EmptyState emoji="⚖️" title="רשום משקל לפחות פעמיים כדי לראות מגמה" />
           )}
+          <div className="mt-4 border-t border-line pt-3">
+            <WeightEntry />
+          </div>
         </Card>
 
       </div>
@@ -211,9 +191,4 @@ export function Dashboard() {
   );
 }
 
-function diffLabel(d: number) {
-  const r = Math.round(d * 10) / 10;
-  if (r === 0) return 'ללא שינוי';
-  return `${r > 0 ? '+' : ''}${r} ק״ג מההתחלה`;
-}
 

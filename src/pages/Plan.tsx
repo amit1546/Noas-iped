@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { AddMealSheet } from '../components/AddMealSheet';
 import { DateNav } from '../components/DateNav';
 import { FixedMealsManager } from '../components/FixedMealsManager';
-import { WeightCard } from '../components/WeightCard';
 import { HabitChecklist } from '../components/HabitChecklist';
 import { HabitForm } from '../components/HabitForm';
 import { PlannedMeals } from '../components/PlannedMeals';
@@ -123,10 +122,6 @@ export function Plan() {
             onAdd={(name) => setHabitForm({ open: true, name })}
           />
         </Card>
-      </div>
-
-      <div className="mt-5">
-        <WeightCard />
       </div>
 
       <FixedMealsManager open={manageMeals} onClose={() => setManageMeals(false)} />

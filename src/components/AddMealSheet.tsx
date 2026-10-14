@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { addMeal, saveFixedMeal } from '../db/queries';
 import { MEAL_TYPE_LABELS, MEAL_TYPE_ORDER, type MealType } from '../db/schema';
 import { BottomSheet } from './BottomSheet';
+import { OptionalTime } from './OptionalTime';
 import { Button, Segmented } from './ui';
 
 function defaultMealType(time?: string): MealType {
@@ -131,19 +132,15 @@ export function AddMealSheet({
             />
           </div>
         )}
-        <div>
-          <label className="label" htmlFor="meal-time">
-            שעה <span className="font-normal">(לא חובה)</span>
-          </label>
-          <input
-            id="meal-time"
-            className="input"
-            type="time"
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-muted">שעה (לא חובה):</span>
+          <OptionalTime
             value={time}
-            onChange={(e) => {
-              setTime(e.target.value);
+            label="שעה לארוחה"
+            onChange={(v) => {
+              setTime(v);
               // Follow the chosen time unless the meal type was picked by hand.
-              if (e.target.value && !typeTouched) setMealType(defaultMealType(e.target.value));
+              if (v && !typeTouched) setMealType(defaultMealType(v));
             }}
           />
         </div>

@@ -4,18 +4,21 @@ import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, PageHeader } from '../components/ui';
-import { useHabitLogsBetween, useHabits, useMealsBetween, useSettings, useTasksBetween } from '../db/queries';
+import { useHabitLogsBetween, useHabits, useMealsBetween, useSettings, useTasksBetween, useWorkoutsBetween } from '../db/queries';
+import { isWorkoutDone } from '../db/schema';
 import type { ISODate } from '../db/schema';
 import { fromISO, rangeISO, shiftISO, toISO, todayISO } from '../lib/dates';
 import { useSelectedDate } from '../lib/selectedDate';
 import { calorieStatus, sumMeals } from '../lib/stats';
+import { KIND_COLORS, OVER_GOAL_COLOR } from '../lib/kinds';
 import { isScheduled } from '../lib/streaks';
 
 const DOT = {
-  tasks: '#6366f1',
-  habits: '#3b82f6',
-  foodOk: '#06b6d4',
-  foodOver: '#ef4444',
+  tasks: KIND_COLORS.task,
+  habits: KIND_COLORS.habit,
+  workouts: KIND_COLORS.workout,
+  foodOk: KIND_COLORS.meal,
+  foodOver: OVER_GOAL_COLOR,
 };
 
 const WEEKDAYS = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳'];
@@ -25,7 +28,10 @@ interface DaySummary {
   tasksDone: number;
   habitsTotal: number;
   habitsDone: number;
+  workoutsTotal: number;
+  workoutsDone: number;
   calories: number;
+  plannedMeals: number;
 }
 
 export function CalendarPage() {
@@ -45,6 +51,7 @@ export function CalendarPage() {
   const tasks = useTasksBetween(first, last);
   const logs = useHabitLogsBetween(first, last);
   const meals = useMealsBetween(first, last);
+  const workouts = useWorkoutsBetween(first, last);
   const habits = useHabits();
 
   const summaries = useMemo(() => {
@@ -59,11 +66,14 @@ export function CalendarPage() {
         tasksDone: dayTasks.filter((t) => t.done).length,
         habitsTotal: sched.length,
         habitsDone: sched.filter((h) => doneIds.has(h.id!)).length,
+        workoutsTotal: workouts.filter((w) => w.date === d).length,
+        workoutsDone: workouts.filter((w) => w.date === d && isWorkoutDone(w)).length,
         calories: sumMeals(meals.filter((x) => x.date === d)).calories,
+        plannedMeals: meals.filter((x) => x.date === d && x.planned).length,
       });
     }
     return m;
-  }, [first, month, tasks, logs, meals, habits]);
+  }, [first, month, tasks, logs, meals, habits, workouts]);
 
 
   return (
@@ -112,7 +122,7 @@ export function CalendarPage() {
                   !inMonth
                     ? 'invisible'
                     : isToday
-                      ? 'bg-blue-600 text-white shadow-soft'
+                      ? 'bg-blue-50 text-blue-700 ring-[3px] ring-blue-600 dark:bg-blue-500/15 dark:text-blue-200'
                       : isSel
                         ? 'bg-blue-50 ring-2 ring-blue-400 dark:bg-blue-500/10'
                         : d < today
@@ -124,7 +134,7 @@ export function CalendarPage() {
                   {fromISO(d).getDate()}
                 </span>
                 <span className="flex h-2.5 items-center gap-1">
-                  {s && <Dots s={s} goal={calorieGoal} onBlue={isToday} />}
+                  {s && <Dots s={s} goal={calorieGoal} />}
                 </span>
               </button>
             );
@@ -134,8 +144,9 @@ export function CalendarPage() {
         <div className="mt-4 flex flex-wrap justify-center gap-x-5 gap-y-2 border-t border-line pt-3 text-sm text-muted">
           <Legend color={DOT.tasks} label="משימות" />
           <Legend color={DOT.habits} label="הרגלים" />
-          <Legend color={DOT.foodOk} label="תזונה ביעד" />
-          <Legend color={DOT.foodOver} label="מעל היעד" />
+          <Legend color={DOT.workouts} label="אימונים" />
+          <Legend color={DOT.foodOk} label="ארוחות" />
+          <Legend color={DOT.foodOver} label="מעל יעד הקלוריות" />
           <span className="flex items-center gap-1.5">
             <span className="h-2.5 w-2.5 rounded-full border-2 border-muted" /> לא הושלם
           </span>
@@ -147,15 +158,18 @@ export function CalendarPage() {
 }
 
 /** Filled dot = completed, hollow ring = there was something but not completed. */
-function Dots({ s, goal, onBlue }: { s: DaySummary; goal: number; onBlue: boolean }) {
+function Dots({ s, goal }: { s: DaySummary; goal: number }) {
   const dots: { color: string; filled: boolean }[] = [];
   if (s.tasksTotal) dots.push({ color: DOT.tasks, filled: s.tasksDone === s.tasksTotal });
   if (s.habitsDone) dots.push({ color: DOT.habits, filled: s.habitsDone === s.habitsTotal });
+  if (s.workoutsTotal) dots.push({ color: DOT.workouts, filled: s.workoutsDone === s.workoutsTotal });
+  // Meals: filled once something was eaten (red if over the goal), hollow while only planned.
   if (s.calories) dots.push({ color: calorieStatus(s.calories, goal) === 'over' ? DOT.foodOver : DOT.foodOk, filled: true });
+  else if (s.plannedMeals) dots.push({ color: DOT.foodOk, filled: false });
   return (
     <>
       {dots.map((d, i) => {
-        const c = onBlue ? '#fff' : d.color;
+        const c = d.color;
         return (
           <span
             key={i}

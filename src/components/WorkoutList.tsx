@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import { addWorkout, deleteWorkout, setWorkoutDone, useWorkoutNames, useWorkoutsOn } from '../db/queries';
+import { addWorkout, deleteWorkout, setWorkoutDone, useWorkoutsOn } from '../db/queries';
 import { isWorkoutDone, type ISODate } from '../db/schema';
 import { todayISO } from '../lib/dates';
 import { useCelebrate } from './Confetti';
@@ -13,12 +13,10 @@ const COLOR = '#2563eb';
 /** Workouts for a day with a one-line add (name + optional time). */
 export function WorkoutList({ date }: { date: ISODate }) {
   const workouts = useWorkoutsOn(date);
-  const names = useWorkoutNames();
   const celebrate = useCelebrate();
   const [title, setTitle] = useState('');
   const [time, setTime] = useState('');
   const sorted = [...workouts].sort((a, b) => (a.time ?? '99:99').localeCompare(b.time ?? '99:99'));
-  const suggestions = names.filter((n) => n !== title).slice(0, 6);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,15 +41,6 @@ export function WorkoutList({ date }: { date: ISODate }) {
           onChange={(e) => setTitle(e.target.value)}
           aria-label="אימון חדש"
         />
-        {suggestions.length > 0 && !title && (
-          <div className="flex flex-wrap gap-1.5">
-            {suggestions.map((n) => (
-              <button type="button" key={n} onClick={() => setTitle(n)} className="chip text-muted hover:text-ink">
-                {n}
-              </button>
-            ))}
-          </div>
-        )}
         <div className="flex items-center gap-2">
           <OptionalTime value={time} onChange={setTime} label="שעה לאימון" />
           <span className="flex-1" />

@@ -19,6 +19,7 @@ import {
 } from '../db/queries';
 import { isWorkoutDone } from '../db/schema';
 import { formatLong, formatShort, greeting, hebrewDate, todayISO } from '../lib/dates';
+import { KIND_COLORS } from '../lib/kinds';
 import { quoteOfDay } from '../lib/quotes';
 import { sumMeals } from '../lib/stats';
 import { daysSince } from '../lib/reminder';
@@ -37,10 +38,10 @@ interface Item {
 }
 
 const KIND: Record<Kind, { label: string; color: string; icon: ReactNode }> = {
-  task: { label: 'משימה', color: '#7c3aed', icon: <ListChecks size={14} /> },
-  habit: { label: 'הרגל', color: '#059669', icon: <Flame size={14} /> },
-  workout: { label: 'אימון', color: '#ea580c', icon: <Dumbbell size={14} /> },
-  meal: { label: 'ארוחה', color: '#db2777', icon: <Apple size={14} /> },
+  task: { label: 'משימה', color: KIND_COLORS.task, icon: <ListChecks size={14} /> },
+  habit: { label: 'הרגל', color: KIND_COLORS.habit, icon: <Flame size={14} /> },
+  workout: { label: 'אימון', color: KIND_COLORS.workout, icon: <Dumbbell size={14} /> },
+  meal: { label: 'ארוחה', color: KIND_COLORS.meal, icon: <Apple size={14} /> },
 };
 
 export function Today() {
@@ -138,7 +139,7 @@ export function Today() {
 
       {weighDue && (
         <Link
-          to="/plan"
+          to="/dashboard"
           className="mb-5 flex items-center gap-3 rounded-3xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300"
         >
           <Scale size={20} className="shrink-0" />

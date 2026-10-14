@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { calorieStatus, sumMeals, workoutVolume } from '../lib/stats';
+import { calorieStatus, sumMeals } from '../lib/stats';
 
 describe('stats', () => {
   it('sums meals', () => {
@@ -13,9 +13,4 @@ describe('stats', () => {
     expect(calorieStatus(2100, 2000)).toBe('over');
   });
 
-  it('computes workout volume', () => {
-    expect(
-      workoutVolume({ exercises: [{ name: 'סקוואט', sets: [{ reps: 10, weight: 60 }, { reps: 8, weight: 70 }] }] }),
-    ).toBe(1160);
-  });
 });

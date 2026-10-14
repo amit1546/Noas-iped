@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { Apple, Droplets, Minus, Plus, Scale, Settings2, Trash2, UtensilsCrossed } from 'lucide-react';
+import { Apple, Plus, Scale, Settings2, Trash2, UtensilsCrossed } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { BottomSheet } from '../components/BottomSheet';
 import { CalorieSummary } from '../components/CalorieSummary';
@@ -12,13 +12,10 @@ import {
   deleteMeal,
   saveFixedMeal,
   setBodyWeight,
-  setWater,
   toggleFixedMealEaten,
   useBodyWeights,
   useFixedMeals,
   useMeals,
-  useSettings,
-  useWater,
 } from '../db/queries';
 import { MEAL_TYPE_LABELS, MEAL_TYPE_ORDER, type MealType } from '../db/schema';
 import { useSelectedDate } from '../lib/selectedDate';
@@ -45,7 +42,7 @@ export function Nutrition() {
 
   return (
     <>
-      <PageHeader title="תזונה" subtitle="אוכלים חכם, מרגישים טוב" accent="emerald" icon={<Apple />} />
+      <PageHeader title="תזונה" subtitle="אוכלים חכם, מרגישים טוב" accent="sky" icon={<Apple />} />
       <DateNav date={date} onChange={setDate} />
 
       <div className="grid gap-5 lg:grid-cols-2">
@@ -53,10 +50,10 @@ export function Nutrition() {
           <CalorieSummary totals={totals} />
         </Card>
 
-        <Card>
+        <Card className="lg:col-span-2">
           <CardTitle
             title="ארוחות קבועות"
-            accent="emerald"
+            accent="sky"
             icon={<UtensilsCrossed size={18} />}
             action={
               <button className="chip text-muted hover:text-ink" onClick={() => setManageOpen(true)}>
@@ -70,32 +67,35 @@ export function Nutrition() {
               title="אין עדיין ארוחות קבועות"
               text="הגדר את הארוחות שאתה אוכל בדרך כלל, ואז תסמן אותן בלחיצה אחת"
               action={
-                <Button accent="emerald" onClick={() => setManageOpen(true)}>
+                <Button accent="sky" onClick={() => setManageOpen(true)}>
                   הוסף ארוחה קבועה
                 </Button>
               }
             />
           ) : (
-            <ul className="space-y-2">
+            <ul className="grid gap-2.5 lg:grid-cols-2">
               {activeFixed.map((fm) => {
                 const eaten = eatenFixedIds.has(fm.id!);
                 return (
                   <li key={fm.id}>
                     <button
                       onClick={() => toggleFixedMealEaten(fm, date)}
-                      className="flex min-h-[60px] w-full items-center gap-3 rounded-2xl border-2 px-3 text-start transition active:scale-[0.98]"
+                      className="flex min-h-[76px] w-full items-center gap-3 rounded-2xl border-2 px-4 text-start transition active:scale-[0.98]"
                       style={{
-                        borderColor: eaten ? '#10b981' : 'transparent',
-                        background: eaten ? '#10b98114' : 'rgb(var(--canvas))',
+                        borderColor: eaten ? '#0ea5e9' : 'transparent',
+                        background: eaten ? '#0ea5e914' : 'rgb(var(--canvas))',
                       }}
                     >
-                      <CheckCircle checked={eaten} color="#10b981" />
+                      <CheckCircle checked={eaten} color="#0ea5e9" />
                       <span className="flex-1">
-                        <span className="block font-semibold">{fm.name}</span>
-                        <span className="text-xs text-muted">{MEAL_TYPE_LABELS[fm.mealType]}</span>
+                        <span className="block text-lg font-semibold">{fm.name}</span>
+                        <span className="text-sm text-muted">
+                          {MEAL_TYPE_LABELS[fm.mealType]}
+                          {fm.protein ? ` · ${fm.protein} גר׳ חלבון` : ''}
+                        </span>
                       </span>
                       <span className="text-end">
-                        <span className="block font-bold tabular-nums">{fm.calories}</span>
+                        <span className="block text-lg font-bold tabular-nums">{fm.calories}</span>
                         <span className="text-xs text-muted">קל׳</span>
                       </span>
                     </button>
@@ -109,7 +109,7 @@ export function Nutrition() {
         <Card>
           <CardTitle
             title="מה אכלתי"
-            accent="emerald"
+            accent="sky"
             icon={<Apple size={18} />}
             action={
               <IconButton label="הוסף ארוחה" onClick={() => setAddOpen(true)}>
@@ -144,7 +144,7 @@ export function Nutrition() {
                             <span className="flex-1 font-medium">
                               {m.name}
                               {m.fixedMealId != null && (
-                                <span className="ms-2 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
+                                <span className="ms-2 rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-bold text-sky-700 dark:bg-sky-500/15 dark:text-sky-300">
                                   קבועה
                                 </span>
                               )}
@@ -166,11 +166,11 @@ export function Nutrition() {
           )}
         </Card>
 
-        <WaterCard date={date} />
-        <WeightCard date={date} />
       </div>
 
-      <Fab accent="emerald" label="הוסף ארוחה" onClick={() => setAddOpen(true)} />
+      <WeightRow date={date} />
+
+      <Fab accent="sky" label="הוסף ארוחה" onClick={() => setAddOpen(true)} />
       <AddMealSheet open={addOpen} onClose={() => setAddOpen(false)} date={date} />
       <FixedMealsManager open={manageOpen} onClose={() => setManageOpen(false)} />
     </>
@@ -217,7 +217,7 @@ function AddMealSheet({ open, onClose, date }: { open: boolean; onClose: () => v
           <input id="meal-name" className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="לדוגמה: סלט עם טונה" />
         </div>
         <Segmented
-          accent="emerald"
+          accent="sky"
           value={mealType}
           onChange={setMealType}
           options={MEAL_TYPE_ORDER.map((t) => ({ value: t, label: MEAL_TYPE_LABELS[t] }))}
@@ -237,10 +237,10 @@ function AddMealSheet({ open, onClose, date }: { open: boolean; onClose: () => v
           </div>
         </div>
         <label className="flex cursor-pointer items-center gap-3 rounded-2xl bg-canvas p-3.5">
-          <input type="checkbox" className="h-5 w-5 accent-emerald-600" checked={saveAsFixed} onChange={(e) => setSaveAsFixed(e.target.checked)} />
+          <input type="checkbox" className="h-5 w-5 accent-sky-600" checked={saveAsFixed} onChange={(e) => setSaveAsFixed(e.target.checked)} />
           <span className="font-medium">שמור גם כארוחה קבועה</span>
         </label>
-        <Button accent="emerald" type="submit" className="w-full" disabled={!name.trim() || calories === ''}>
+        <Button accent="sky" type="submit" className="w-full" disabled={!name.trim() || calories === ''}>
           הוספה
         </Button>
       </form>
@@ -248,39 +248,7 @@ function AddMealSheet({ open, onClose, date }: { open: boolean; onClose: () => v
   );
 }
 
-function WaterCard({ date }: { date: string }) {
-  const glasses = useWater(date);
-  const { waterGoal } = useSettings();
-  return (
-    <Card>
-      <CardTitle title="מים" accent="sky" icon={<Droplets size={18} />} />
-      <div className="flex items-center justify-between gap-3">
-        <IconButton label="פחות כוס" onClick={() => setWater(date, glasses - 1)} className="bg-canvas">
-          <Minus />
-        </IconButton>
-        <div className="flex flex-1 flex-wrap justify-center gap-1">
-          {Array.from({ length: Math.max(waterGoal, glasses) }).map((_, i) => (
-            <motion.span
-              key={i}
-              animate={{ scale: i < glasses ? 1 : 0.85, opacity: i < glasses ? 1 : 0.3 }}
-              className="text-2xl"
-            >
-              💧
-            </motion.span>
-          ))}
-        </div>
-        <IconButton label="עוד כוס" onClick={() => setWater(date, glasses + 1)} className="bg-sky-100 text-sky-700 dark:bg-sky-500/20 dark:text-sky-300">
-          <Plus />
-        </IconButton>
-      </div>
-      <p className="mt-2 text-center text-sm font-semibold text-muted">
-        {glasses} / {waterGoal} כוסות
-      </p>
-    </Card>
-  );
-}
-
-function WeightCard({ date }: { date: string }) {
+function WeightRow({ date }: { date: string }) {
   const weights = useBodyWeights();
   const entry = weights.find((w) => w.date === date);
   const last = [...weights].reverse().find((w) => w.date < date);
@@ -296,28 +264,32 @@ function WeightCard({ date }: { date: string }) {
   const diff = entry && last ? Math.round((entry.kg - last.kg) * 10) / 10 : null;
 
   return (
-    <Card>
-      <CardTitle title="משקל גוף" accent="violet" icon={<Scale size={18} />} />
-      <form onSubmit={save} className="flex gap-2">
-        <input
-          className="input"
-          type="number"
-          step="0.1"
-          inputMode="decimal"
-          placeholder={last ? `אחרון: ${last.kg}` : 'ק״ג'}
-          value={kg}
-          onChange={(e) => setKg(e.target.value)}
-          aria-label="משקל בק״ג"
-        />
-        <Button type="submit" disabled={!kg}>
-          {entry ? 'עדכן' : 'שמור'}
-        </Button>
-      </form>
+    <form onSubmit={save} className="card mt-5 flex items-center gap-2 px-4 py-2.5">
+      <Scale size={18} className="shrink-0 text-muted" />
+      <span className="shrink-0 text-sm font-semibold">משקל</span>
+      <input
+        className="w-20 rounded-xl border border-line bg-canvas px-2 py-1.5 text-center tabular-nums"
+        type="number"
+        step="0.1"
+        inputMode="decimal"
+        placeholder={last ? String(last.kg) : 'ק״ג'}
+        value={kg}
+        onChange={(e) => setKg(e.target.value)}
+        aria-label="משקל בק״ג"
+      />
+      <span className="text-sm text-muted">ק״ג</span>
       {diff != null && (
-        <p className={`mt-2 text-sm font-semibold ${diff <= 0 ? 'text-emerald-600' : 'text-orange-500'}`}>
-          {diff === 0 ? 'ללא שינוי' : `${diff > 0 ? '+' : ''}${diff} ק״ג מהשקילה הקודמת`}
-        </p>
+        <span className={`text-xs font-semibold ${diff <= 0 ? 'text-emerald-600' : 'text-orange-500'}`}>
+          {diff === 0 ? 'ללא שינוי' : `${diff > 0 ? '+' : ''}${diff}`}
+        </span>
       )}
-    </Card>
+      <button
+        type="submit"
+        disabled={!kg || Number(kg) === entry?.kg}
+        className="ms-auto rounded-xl px-3 py-1.5 text-sm font-semibold text-blue-600 disabled:opacity-40 dark:text-blue-400"
+      >
+        {entry ? 'עדכן' : 'שמור'}
+      </button>
+    </form>
   );
 }

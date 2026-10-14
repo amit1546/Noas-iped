@@ -1,17 +1,17 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowLeftCircle, Flag, Trash2 } from 'lucide-react';
+import { ArrowLeftCircle, Flag, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { addTask, deleteTask, moveTask, toggleTask, useTasks } from '../db/queries';
 import type { ISODate, Priority, Task } from '../db/schema';
 import { shiftISO, todayISO } from '../lib/dates';
-import { CheckCircle, EmptyState, IconButton } from './ui';
+import { CheckCircle, IconButton } from './ui';
 
 const PRIORITY_COLOR: Record<Priority, string> = { high: '#ef4444', medium: '#f59e0b', low: '#94a3b8' };
 const PRIORITY_RANK: Record<Priority, number> = { high: 0, medium: 1, low: 2 };
 const PRIORITY_LABEL: Record<Priority, string> = { high: 'גבוהה', medium: 'בינונית', low: 'נמוכה' };
 const NEXT_PRIORITY: Record<Priority, Priority> = { low: 'medium', medium: 'high', high: 'low' };
 
-export function TaskList({ date, compact = false }: { date: ISODate; compact?: boolean }) {
+export function TaskList({ date }: { date: ISODate }) {
   const tasks = useTasks(date);
   const [title, setTitle] = useState('');
   const [priority, setPriority] = useState<Priority>('medium');
@@ -49,13 +49,18 @@ export function TaskList({ date, compact = false }: { date: ISODate; compact?: b
         >
           <Flag size={20} color={PRIORITY_COLOR[priority]} fill={PRIORITY_COLOR[priority]} />
         </button>
-        <button type="submit" className="btn shrink-0 bg-violet-600 text-white hover:bg-violet-700">
-          הוסף
+        <button
+          type="submit"
+          aria-label="הוסף משימה"
+          disabled={!title.trim()}
+          className="grid h-[50px] w-[50px] shrink-0 place-items-center rounded-2xl bg-blue-600 text-white transition hover:bg-blue-700 active:scale-95 disabled:opacity-40"
+        >
+          <Plus size={22} />
         </button>
       </form>
 
       {sorted.length === 0 ? (
-        !compact && <EmptyState emoji="📝" title="אין משימות ליום הזה" text="הוסף משימה למעלה ותתחיל לסמן ✓" />
+        <p className="py-2 text-center text-sm text-muted">אין משימות ליום הזה ✨</p>
       ) : (
         <ul className="space-y-1.5">
           <AnimatePresence initial={false}>
@@ -79,7 +84,7 @@ function TaskRow({ task, canCarry }: { task: Task; canCarry: boolean }) {
       className="flex items-center gap-2 rounded-2xl bg-canvas pe-1 ps-3"
     >
       <button onClick={() => toggleTask(task)} className="flex min-h-[52px] flex-1 items-center gap-3 text-start">
-        <CheckCircle checked={task.done} color="#8b5cf6" />
+        <CheckCircle checked={task.done} color="#3b82f6" />
         <span className={`flex-1 font-medium transition ${task.done ? 'text-muted line-through' : ''}`}>
           {task.title}
         </span>

@@ -8,7 +8,6 @@ import {
   type Meal,
   type Settings,
   type Task,
-  type Workout,
 } from './schema';
 
 /* ---------- settings ---------- */
@@ -44,8 +43,11 @@ export const useHabits = (includeArchived = false) =>
     [includeArchived],
   ) ?? [];
 
-export const useHabitLogsOn = (date: ISODate) =>
-  useLiveQuery(() => db.habitLogs.where('date').equals(date).toArray(), [date]) ?? [];
+export const useHabitLogsBetween = (from: ISODate, to: ISODate) =>
+  useLiveQuery(() => db.habitLogs.where('date').between(from, to, true, true).toArray(), [from, to]) ?? [];
+
+export const useTasksBetween = (from: ISODate, to: ISODate) =>
+  useLiveQuery(() => db.tasks.where('date').between(from, to, true, true).toArray(), [from, to]) ?? [];
 
 export const useAllHabitLogs = () => useLiveQuery(() => db.habitLogs.toArray(), []) ?? [];
 
@@ -68,17 +70,6 @@ export async function toggleHabit(habitId: number, date: ISODate): Promise<boole
   await db.habitLogs.add({ habitId, date });
   return true;
 }
-
-/* ---------- workouts ---------- */
-
-export const useWorkouts = () =>
-  useLiveQuery(() => db.workouts.orderBy('date').reverse().toArray(), []) ?? [];
-
-export const useWorkoutsOn = (date: ISODate) =>
-  useLiveQuery(() => db.workouts.where('date').equals(date).toArray(), [date]) ?? [];
-
-export const saveWorkout = (w: Workout) => db.workouts.put(w);
-export const deleteWorkout = (id: number) => db.workouts.delete(id);
 
 /* ---------- nutrition ---------- */
 
@@ -133,13 +124,6 @@ export async function toggleFixedMealEaten(fm: FixedMeal, date: ISODate): Promis
 
 export const addMeal = (m: Omit<Meal, 'id'>) => db.meals.add(m);
 export const deleteMeal = (id: number) => db.meals.delete(id);
-
-export const useWater = (date: ISODate) =>
-  useLiveQuery(() => db.waterLogs.get(date), [date])?.glasses ?? 0;
-
-export async function setWater(date: ISODate, glasses: number) {
-  await db.waterLogs.put({ date, glasses: Math.max(0, glasses) });
-}
 
 export const useBodyWeights = () =>
   useLiveQuery(() => db.bodyWeight.orderBy('date').toArray(), []) ?? [];

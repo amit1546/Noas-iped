@@ -7,7 +7,7 @@ export function useApplyTheme(pref: ThemePref) {
     const apply = () => {
       const dark = pref === 'dark' || (pref === 'system' && mq.matches);
       document.documentElement.classList.toggle('dark', dark);
-      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#0f0e1a' : '#f6f5fb');
+      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#0b1120' : '#f3f6fc');
     };
     apply();
     mq.addEventListener('change', apply);

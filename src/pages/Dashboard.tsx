@@ -1,4 +1,4 @@
-import { Activity, Apple, Dumbbell, Flame, LayoutDashboard, Scale } from 'lucide-react';
+import { Activity, Apple, Flame, LayoutDashboard, Scale } from 'lucide-react';
 import { useMemo } from 'react';
 import {
   Bar,
@@ -14,10 +14,10 @@ import {
   YAxis,
 } from 'recharts';
 import { Card, CardTitle, EmptyState, PageHeader, Stat } from '../components/ui';
-import { useAllHabitLogs, useBodyWeights, useHabits, useMealsBetween, useSettings, useWorkouts } from '../db/queries';
+import { useAllHabitLogs, useBodyWeights, useHabits, useMealsBetween, useSettings, useTasksBetween } from '../db/queries';
 import { formatShort, rangeISO, shiftISO, todayISO, weekdayShort } from '../lib/dates';
 import { isScheduled } from '../lib/streaks';
-import { average, sumMeals, workoutVolume } from '../lib/stats';
+import { average, sumMeals } from '../lib/stats';
 
 const tooltipStyle = {
   contentStyle: {
@@ -38,13 +38,13 @@ export function Dashboard() {
   const habits = useHabits();
   const logs = useAllHabitLogs();
   const meals = useMealsBetween(from, today);
-  const workouts = useWorkouts();
+  const tasks = useTasksBetween(from, today);
   const weights = useBodyWeights();
 
   const habitDays = useMemo(() => {
     const logSet = new Set(logs.map((l) => `${l.habitId}|${l.date}`));
     return days.map((d) => {
-      const sched = habits.filter((h) => isScheduled(h, d) && h.createdAt <= d);
+      const sched = habits.filter((h) => logSet.has(`${h.id}|${d}`) || (isScheduled(h, d) && h.createdAt <= d));
       const done = sched.filter((h) => logSet.has(`${h.id}|${d}`)).length;
       return { day: weekdayShort(d), pct: sched.length ? Math.round((done / sched.length) * 100) : 0, total: sched.length };
     });
@@ -56,12 +56,6 @@ export function Dashboard() {
   }));
   const loggedCalorieDays = calorieDays.filter((d) => d.calories > 0);
 
-  const weekWorkouts = workouts.filter((w) => w.date >= from);
-  const volumeData = [...workouts]
-    .filter((w) => workoutVolume(w) > 0)
-    .slice(0, 10)
-    .reverse()
-    .map((w) => ({ date: formatShort(w.date), volume: workoutVolume(w) }));
 
   const weightData = weights.slice(-30).map((w) => ({ date: formatShort(w.date), kg: w.kg }));
   const habitAvg = Math.round(average(habitDays.filter((d) => d.total > 0).map((d) => d.pct)));
@@ -72,7 +66,7 @@ export function Dashboard() {
 
       <div className="mb-5 grid grid-cols-2 gap-3 md:grid-cols-4">
         <Stat label="השלמת הרגלים" value={`${habitAvg}%`} />
-        <Stat label="אימונים" value={`${weekWorkouts.length}`} sub={`יעד שבועי: ${settings.weeklyWorkoutGoal}`} />
+        <Stat label="משימות שהושלמו" value={`${tasks.filter((t) => t.done).length}/${tasks.length}`} />
         <Stat
           label="ממוצע קלוריות"
           value={Math.round(average(loggedCalorieDays.map((d) => d.calories))).toLocaleString('he-IL')}
@@ -91,14 +85,14 @@ export function Dashboard() {
           {habits.length ? (
             <div className="h-56" dir="ltr">
               <ResponsiveContainer>
-                <BarChart data={habitDays} maxBarSize={44}>
+                <BarChart data={[...habitDays].reverse()} maxBarSize={44}>
                   <CartesianGrid vertical={false} stroke="rgb(var(--line))" />
-                  <XAxis dataKey="day" {...axisProps} reversed />
+                  <XAxis dataKey="day" {...axisProps} />
                   <YAxis domain={[0, 100]} {...axisProps} width={32} orientation="right" />
                   <Tooltip {...tooltipStyle} formatter={(v) => [`${v}%`, 'הושלם']} cursor={{ fill: 'rgb(var(--line) / 0.4)' }} />
                   <Bar dataKey="pct" radius={[10, 10, 4, 4]}>
-                    {habitDays.map((d, i) => (
-                      <Cell key={i} fill={d.pct === 100 ? '#8b5cf6' : '#c4b5fd'} />
+                    {[...habitDays].reverse().map((d, i) => (
+                      <Cell key={i} fill={d.pct === 100 ? '#3b82f6' : '#93c5fd'} />
                     ))}
                   </Bar>
                 </BarChart>
@@ -110,19 +104,19 @@ export function Dashboard() {
         </Card>
 
         <Card>
-          <CardTitle title="קלוריות מול יעד" accent="emerald" icon={<Apple size={18} />} />
+          <CardTitle title="קלוריות מול יעד" accent="sky" icon={<Apple size={18} />} />
           {loggedCalorieDays.length ? (
             <div className="h-56" dir="ltr">
               <ResponsiveContainer>
-                <BarChart data={calorieDays} maxBarSize={44}>
+                <BarChart data={[...calorieDays].reverse()} maxBarSize={44}>
                   <CartesianGrid vertical={false} stroke="rgb(var(--line))" />
-                  <XAxis dataKey="day" {...axisProps} reversed />
+                  <XAxis dataKey="day" {...axisProps} />
                   <YAxis {...axisProps} width={42} orientation="right" />
                   <Tooltip {...tooltipStyle} formatter={(v) => [`${v} קל׳`, 'נאכל']} cursor={{ fill: 'rgb(var(--line) / 0.4)' }} />
                   <ReferenceLine y={settings.calorieGoal} stroke="#f59e0b" strokeDasharray="6 4" strokeWidth={2} />
                   <Bar dataKey="calories" radius={[10, 10, 4, 4]}>
-                    {calorieDays.map((d, i) => (
-                      <Cell key={i} fill={d.calories > settings.calorieGoal ? '#ef4444' : '#10b981'} />
+                    {[...calorieDays].reverse().map((d, i) => (
+                      <Cell key={i} fill={d.calories > settings.calorieGoal ? '#ef4444' : '#06b6d4'} />
                     ))}
                   </Bar>
                 </BarChart>
@@ -134,16 +128,16 @@ export function Dashboard() {
         </Card>
 
         <Card>
-          <CardTitle title="משקל גוף" accent="violet" icon={<Scale size={18} />} />
+          <CardTitle title="משקל גוף" accent="blue" icon={<Scale size={18} />} />
           {weightData.length > 1 ? (
             <div className="h-56" dir="ltr">
               <ResponsiveContainer>
-                <LineChart data={weightData}>
+                <LineChart data={[...weightData].reverse()}>
                   <CartesianGrid vertical={false} stroke="rgb(var(--line))" />
-                  <XAxis dataKey="date" {...axisProps} reversed />
+                  <XAxis dataKey="date" {...axisProps} />
                   <YAxis domain={['dataMin - 1', 'dataMax + 1']} {...axisProps} width={36} orientation="right" />
                   <Tooltip {...tooltipStyle} formatter={(v) => [`${v} ק״ג`, 'משקל']} />
-                  <Line type="monotone" dataKey="kg" stroke="#8b5cf6" strokeWidth={3} dot={{ r: 4, fill: '#8b5cf6' }} />
+                  <Line type="monotone" dataKey="kg" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4, fill: '#3b82f6' }} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -152,24 +146,6 @@ export function Dashboard() {
           )}
         </Card>
 
-        <Card>
-          <CardTitle title="נפח אימונים (ק״ג)" accent="orange" icon={<Dumbbell size={18} />} />
-          {volumeData.length ? (
-            <div className="h-56" dir="ltr">
-              <ResponsiveContainer>
-                <BarChart data={volumeData} maxBarSize={44}>
-                  <CartesianGrid vertical={false} stroke="rgb(var(--line))" />
-                  <XAxis dataKey="date" {...axisProps} reversed />
-                  <YAxis {...axisProps} width={48} orientation="right" />
-                  <Tooltip {...tooltipStyle} formatter={(v) => [`${Number(v).toLocaleString('he-IL')} ק״ג`, 'נפח']} cursor={{ fill: 'rgb(var(--line) / 0.4)' }} />
-                  <Bar dataKey="volume" fill="#f97316" radius={[10, 10, 4, 4]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <EmptyState emoji="🏋️" title="תעד אימוני כוח עם משקלים כדי לראות נפח" />
-          )}
-        </Card>
       </div>
 
       <p className="mt-6 flex items-center justify-center gap-1.5 text-sm text-muted">

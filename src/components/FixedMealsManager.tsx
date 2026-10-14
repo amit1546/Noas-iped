@@ -56,7 +56,7 @@ export function FixedMealsManager({ open, onClose }: { open: boolean; onClose: (
           aria-label="שם הארוחה"
         />
         <Segmented
-          accent="emerald"
+          accent="sky"
           value={form.mealType}
           onChange={(v) => setForm({ ...form, mealType: v })}
           options={MEAL_TYPE_ORDER.map((t) => ({ value: t, label: MEAL_TYPE_LABELS[t] }))}
@@ -82,7 +82,7 @@ export function FixedMealsManager({ open, onClose }: { open: boolean; onClose: (
           />
         </div>
         <div className="flex gap-2">
-          <Button accent="emerald" type="submit" className="flex-1" disabled={!form.name.trim() || form.calories === ''}>
+          <Button accent="sky" type="submit" className="flex-1" disabled={!form.name.trim() || form.calories === ''}>
             {editingId ? 'שמירה' : 'הוספה'}
           </Button>
           {editingId && (
@@ -108,7 +108,7 @@ export function FixedMealsManager({ open, onClose }: { open: boolean; onClose: (
               <label className="flex cursor-pointer items-center gap-1 px-1 text-xs text-muted">
                 <input
                   type="checkbox"
-                  className="h-5 w-5 accent-emerald-600"
+                  className="h-5 w-5 accent-sky-600"
                   checked={m.active}
                   onChange={() => saveFixedMeal({ ...m, active: !m.active })}
                 />

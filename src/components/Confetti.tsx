@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { createContext, useCallback, useContext, useState, type ReactNode } from 'react';
 
-const COLORS = ['#8b5cf6', '#ec4899', '#f97316', '#10b981', '#0ea5e9', '#eab308'];
+const COLORS = ['#3b82f6', '#06b6d4', '#f97316', '#10b981', '#0ea5e9', '#eab308'];
 
 const ConfettiCtx = createContext<(message?: string) => void>(() => {});
 export const useCelebrate = () => useContext(ConfettiCtx);

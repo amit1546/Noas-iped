@@ -9,7 +9,7 @@ export function Card({ children, className = '' }: { children: ReactNode; classN
 export function CardTitle({
   icon,
   title,
-  accent = 'violet',
+  accent = 'blue',
   action,
 }: {
   icon?: ReactNode;
@@ -63,7 +63,7 @@ export function PageHeader({
 
 export function Button({
   children,
-  accent = 'violet',
+  accent = 'blue',
   className = '',
   ...props
 }: React.ButtonHTMLAttributes<HTMLButtonElement> & { accent?: Accent }) {
@@ -148,7 +148,7 @@ export function Segmented<T extends string>({
   value,
   options,
   onChange,
-  accent = 'violet',
+  accent = 'blue',
 }: {
   value: T;
   options: { value: T; label: string }[];

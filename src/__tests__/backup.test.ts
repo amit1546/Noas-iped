@@ -9,7 +9,7 @@ describe('backup', () => {
     await db.tasks.add({ title: 'לקנות חלב', date: '2026-03-10', done: false, priority: 'medium' });
     const fmId = await db.fixedMeals.add({ name: 'שייק', mealType: 'breakfast', calories: 300, protein: 25, active: true, order: 1 });
     await db.meals.add({ date: '2026-03-10', mealType: 'breakfast', name: 'שייק', calories: 300, protein: 25, fixedMealId: fmId });
-    await db.settings.put({ id: 'main', calorieGoal: 1800, proteinGoal: 140, waterGoal: 10, weeklyWorkoutGoal: 4, theme: 'dark' });
+    await db.settings.put({ id: 'main', calorieGoal: 1800, proteinGoal: 140, theme: 'dark' });
 
     const text = JSON.stringify(await exportBackup(db));
     await clearAll(db);

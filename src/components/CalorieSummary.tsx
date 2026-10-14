@@ -4,7 +4,7 @@ import { updateSettings, useSettings } from '../db/queries';
 import { calorieStatus, type DayTotals } from '../lib/stats';
 import { ProgressBar, ProgressRing } from './ProgressRing';
 
-const STATUS_COLOR = { under: '#10b981', near: '#f59e0b', over: '#ef4444' } as const;
+const STATUS_COLOR = { under: '#3b82f6', near: '#f59e0b', over: '#ef4444' } as const;
 
 export function CalorieSummary({ totals, editable = true }: { totals: DayTotals; editable?: boolean }) {
   const settings = useSettings();
@@ -56,7 +56,7 @@ export function CalorieSummary({ totals, editable = true }: { totals: DayTotals;
                   onBlur={() => saveGoal()}
                   aria-label="יעד קלורי יומי"
                 />
-                <button type="submit" aria-label="שמור יעד" className="p-1 text-emerald-600">
+                <button type="submit" aria-label="שמור יעד" className="p-1 text-blue-600">
                   <Check size={20} />
                 </button>
               </form>
@@ -80,7 +80,7 @@ export function CalorieSummary({ totals, editable = true }: { totals: DayTotals;
               {totals.protein} / {settings.proteinGoal} גר׳
             </span>
           </div>
-          <ProgressBar value={totals.protein} max={settings.proteinGoal} color="#8b5cf6" />
+          <ProgressBar value={totals.protein} max={settings.proteinGoal} color="#3b82f6" />
         </div>
         <p className="text-sm font-medium" style={{ color }}>
           {status === 'under' && 'יש לך עוד מקום — תהנה! 🥗'}

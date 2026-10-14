@@ -1,4 +1,4 @@
-import type { Meal, Workout } from '../db/schema';
+import type { Meal } from '../db/schema';
 
 export interface DayTotals {
   calories: number;
@@ -20,13 +20,6 @@ export function calorieStatus(eaten: number, goal: number): CalorieStatus {
   if (eaten > goal) return 'over';
   if (eaten >= goal * 0.9) return 'near';
   return 'under';
-}
-
-export function workoutVolume(w: Pick<Workout, 'exercises'>): number {
-  return w.exercises.reduce(
-    (acc, ex) => acc + ex.sets.reduce((s, set) => s + (set.reps || 0) * (set.weight || 0), 0),
-    0,
-  );
 }
 
 export function average(nums: number[]): number {

@@ -40,12 +40,10 @@ export function SettingsPage() {
 
       <div className="grid gap-5 lg:grid-cols-2">
         <Card>
-          <CardTitle title="יעדים" accent="emerald" icon={<Target size={18} />} />
+          <CardTitle title="יעדים" accent="sky" icon={<Target size={18} />} />
           <div className="grid grid-cols-2 gap-3">
             <GoalInput label="קלוריות ליום" field="calorieGoal" settings={settings} />
             <GoalInput label="חלבון ליום (גר׳)" field="proteinGoal" settings={settings} />
-            <GoalInput label="כוסות מים ליום" field="waterGoal" settings={settings} />
-            <GoalInput label="אימונים בשבוע" field="weeklyWorkoutGoal" settings={settings} />
           </div>
         </Card>
 
@@ -95,7 +93,7 @@ export function SettingsPage() {
         </Card>
 
         <Card>
-          <CardTitle title="התקנה כאפליקציה" accent="violet" icon={<Smartphone size={18} />} />
+          <CardTitle title="התקנה כאפליקציה" accent="blue" icon={<Smartphone size={18} />} />
           <ol className="list-inside list-decimal space-y-1 text-sm text-muted">
             <li>פתח את האתר ב-Safari (באייפד / אייפון) או ב-Chrome (אנדרואיד / מחשב)</li>
             <li>לחץ על כפתור השיתוף ⬆️</li>
@@ -114,7 +112,7 @@ export function SettingsPage() {
   );
 }
 
-type GoalField = 'calorieGoal' | 'proteinGoal' | 'waterGoal' | 'weeklyWorkoutGoal';
+type GoalField = 'calorieGoal' | 'proteinGoal';
 
 function GoalInput({ label, field, settings }: { label: string; field: GoalField; settings: Settings }) {
   return (

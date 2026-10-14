@@ -3,20 +3,20 @@
 @tailwind utilities;
 
 :root {
-  --canvas: 246 245 251;
+  --canvas: 243 246 252;
   --surface: 255 255 255;
-  --ink: 24 22 43;
-  --muted: 112 108 136;
-  --line: 232 230 242;
+  --ink: 17 24 39;
+  --muted: 100 112 135;
+  --line: 226 232 243;
   color-scheme: light;
 }
 
 .dark {
-  --canvas: 15 14 26;
-  --surface: 27 25 43;
-  --ink: 240 238 250;
-  --muted: 160 156 185;
-  --line: 45 42 66;
+  --canvas: 11 17 32;
+  --surface: 20 28 48;
+  --ink: 236 242 252;
+  --muted: 148 163 190;
+  --line: 38 50 76;
   color-scheme: dark;
 }
 
@@ -42,7 +42,7 @@ textarea {
   }
   .input {
     @apply w-full rounded-2xl border border-line bg-canvas px-4 py-3 text-ink outline-none transition
-      placeholder:text-muted/70 focus:border-violet-400 focus:ring-4 focus:ring-violet-400/15;
+      placeholder:text-muted/70 focus:border-blue-400 focus:ring-4 focus:ring-blue-400/15;
   }
   .label {
     @apply mb-1.5 block text-sm font-medium text-muted;

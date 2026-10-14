@@ -31,6 +31,7 @@ export interface HabitLog {
   date: ISODate;
 }
 
+/** Legacy (feature removed); table kept so old backups still import. */
 export type WorkoutType = 'strength' | 'cardio' | 'other';
 
 export interface WorkoutSet {
@@ -75,6 +76,7 @@ export interface Meal {
   fixedMealId?: number;
 }
 
+/** Legacy (feature removed); table kept so old backups still import. */
 export interface WaterLog {
   date: ISODate;
   glasses: number;
@@ -91,8 +93,6 @@ export interface Settings {
   id: 'main';
   calorieGoal: number;
   proteinGoal: number;
-  waterGoal: number;
-  weeklyWorkoutGoal: number;
   theme: ThemePref;
 }
 
@@ -100,8 +100,6 @@ export const DEFAULT_SETTINGS: Settings = {
   id: 'main',
   calorieGoal: 2000,
   proteinGoal: 120,
-  waterGoal: 8,
-  weeklyWorkoutGoal: 3,
   theme: 'system',
 };
 
@@ -113,9 +111,3 @@ export const MEAL_TYPE_LABELS: Record<MealType, string> = {
 };
 
 export const MEAL_TYPE_ORDER: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
-
-export const WORKOUT_TYPE_LABELS: Record<WorkoutType, string> = {
-  strength: 'כוח',
-  cardio: 'אירובי',
-  other: 'אחר',
-};

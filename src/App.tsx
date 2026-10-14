@@ -5,8 +5,7 @@ import { ConfettiProvider } from './components/Confetti';
 import { useSettings } from './db/queries';
 import { useApplyTheme } from './lib/theme';
 import { Today } from './pages/Today';
-import { Habits } from './pages/Habits';
-import { Workouts } from './pages/Workouts';
+import { CalendarPage } from './pages/Calendar';
 import { Nutrition } from './pages/Nutrition';
 import { SettingsPage } from './pages/Settings';
 
@@ -22,8 +21,8 @@ export default function App() {
         <Routes>
           <Route element={<Layout />}>
             <Route index element={<Today />} />
-            <Route path="habits" element={<Habits />} />
-            <Route path="workouts" element={<Workouts />} />
+            <Route path="*" element={<Today />} />
+            <Route path="calendar" element={<CalendarPage />} />
             <Route path="nutrition" element={<Nutrition />} />
             <Route
               path="dashboard"

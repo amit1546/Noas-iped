@@ -70,7 +70,7 @@ export function HabitForm({ open, onClose, habit }: { open: boolean; onClose: ()
                 key={e}
                 onClick={() => setEmoji(e)}
                 className={`grid h-11 place-items-center rounded-xl text-xl transition ${
-                  emoji === e ? 'bg-violet-100 ring-2 ring-violet-500 dark:bg-violet-500/20' : 'bg-canvas'
+                  emoji === e ? 'bg-blue-100 ring-2 ring-blue-500 dark:bg-blue-500/20' : 'bg-canvas'
                 }`}
               >
                 {e}
@@ -94,7 +94,7 @@ export function HabitForm({ open, onClose, habit }: { open: boolean; onClose: ()
           </div>
         </div>
         <div>
-          <span className="label">באילו ימים? {days.length === 0 && <span className="text-violet-600">(כל יום)</span>}</span>
+          <span className="label">באילו ימים? {days.length === 0 && <span className="text-blue-600">(כל יום)</span>}</span>
           <div className="flex gap-1.5">
             {DAYS.map(({ d, l }) => (
               <button

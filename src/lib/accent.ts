@@ -1,18 +1,18 @@
-export type Accent = 'violet' | 'orange' | 'emerald' | 'sky' | 'slate';
+export type Accent = 'blue' | 'orange' | 'emerald' | 'sky' | 'slate';
 
 /** Literal class names per accent so Tailwind keeps them. */
 export const ACCENT: Record<
   Accent,
   { bg: string; soft: string; text: string; ring: string; stroke: string; gradient: string; hex: string }
 > = {
-  violet: {
-    bg: 'bg-violet-600 text-white hover:bg-violet-700',
-    soft: 'bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300',
-    text: 'text-violet-600 dark:text-violet-400',
-    ring: 'focus:ring-violet-400/20',
-    stroke: '#8b5cf6',
-    gradient: 'from-violet-500 to-fuchsia-500',
-    hex: '#7c3aed',
+  blue: {
+    bg: 'bg-blue-600 text-white hover:bg-blue-700',
+    soft: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300',
+    text: 'text-blue-600 dark:text-blue-400',
+    ring: 'focus:ring-blue-400/20',
+    stroke: '#3b82f6',
+    gradient: 'from-blue-500 to-indigo-500',
+    hex: '#2563eb',
   },
   orange: {
     bg: 'bg-orange-500 text-white hover:bg-orange-600',
@@ -52,4 +52,4 @@ export const ACCENT: Record<
   },
 };
 
-export const HABIT_COLORS = ['#8b5cf6', '#ec4899', '#f97316', '#10b981', '#0ea5e9', '#eab308', '#ef4444', '#14b8a6'];
+export const HABIT_COLORS = ['#3b82f6', '#06b6d4', '#f97316', '#10b981', '#0ea5e9', '#eab308', '#ef4444', '#14b8a6'];

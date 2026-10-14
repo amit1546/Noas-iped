@@ -1,12 +1,11 @@
-import { AnimatePresence, motion } from 'framer-motion';
-import { Apple, CalendarCheck, CalendarDays, CalendarRange, LayoutDashboard, Settings } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { CalendarCheck, CalendarDays, CalendarRange, LayoutDashboard, Settings } from 'lucide-react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 
 const NAV = [
   { to: '/', label: 'היום', icon: CalendarCheck, color: 'text-blue-600 dark:text-blue-400' },
   { to: '/plan', label: 'תכנון', icon: CalendarRange, color: 'text-blue-600 dark:text-blue-400' },
   { to: '/calendar', label: 'לוח שנה', icon: CalendarDays, color: 'text-indigo-600 dark:text-indigo-400' },
-  { to: '/nutrition', label: 'תזונה', icon: Apple, color: 'text-sky-600 dark:text-sky-400' },
   { to: '/dashboard', label: 'סיכום', icon: LayoutDashboard, color: 'text-sky-600 dark:text-sky-400' },
 ];
 
@@ -42,17 +41,16 @@ export function Layout() {
       </aside>
 
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 pb-32 pt-[max(1.25rem,env(safe-area-inset-top))] md:px-8 md:pb-12 md:pt-8">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={location.pathname}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.18 }}
-          >
-            <Outlet />
-          </motion.div>
-        </AnimatePresence>
+        {/* Enter-only animation: waiting for an exit animation (AnimatePresence mode="wait")
+            could leave the screen blank on iPad until a refresh. */}
+        <motion.div
+          key={location.pathname}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.16 }}
+        >
+          <Outlet />
+        </motion.div>
       </main>
 
       {/* Bottom nav (phone) */}

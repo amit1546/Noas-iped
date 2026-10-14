@@ -1,6 +1,9 @@
-import { CalendarClock, CalendarRange, Check, Dumbbell, Flame, ListChecks, Pencil, Plus } from 'lucide-react';
+import { CalendarClock, CalendarRange, Check, Dumbbell, Flame, ListChecks, Pencil, Plus, Settings2 } from 'lucide-react';
 import { useState } from 'react';
+import { AddMealSheet } from '../components/AddMealSheet';
 import { DateNav } from '../components/DateNav';
+import { FixedMealsManager } from '../components/FixedMealsManager';
+import { WeightCard } from '../components/WeightCard';
 import { HabitChecklist } from '../components/HabitChecklist';
 import { HabitForm } from '../components/HabitForm';
 import { PlannedMeals } from '../components/PlannedMeals';
@@ -11,7 +14,7 @@ import { planFixedMeal, useFixedMeals, useMeals, useSettings } from '../db/queri
 import type { Habit } from '../db/schema';
 import { useSelectedDate } from '../lib/selectedDate';
 import { sumMeals } from '../lib/stats';
-import { AddMealSheet } from './Nutrition';
+
 
 export function Plan() {
   const [date, setDate] = useSelectedDate();
@@ -21,6 +24,7 @@ export function Plan() {
   const [editingHabits, setEditingHabits] = useState(false);
   const [habitForm, setHabitForm] = useState<{ open: boolean; habit?: Habit; name?: string }>({ open: false });
   const [planningMeal, setPlanningMeal] = useState(false);
+  const [manageMeals, setManageMeals] = useState(false);
 
   const plannedCalories = meals.filter((m) => m.planned).reduce((a, m) => a + m.calories, 0);
   const dayCalories = sumMeals(meals).calories + plannedCalories;
@@ -47,11 +51,24 @@ export function Plan() {
             accent="sky"
             icon={<CalendarClock size={18} />}
             action={
-              <button className="chip text-muted hover:text-ink" onClick={() => setPlanningMeal(true)}>
-                <Plus size={16} /> ארוחה אחרת
-              </button>
+              <div className="flex gap-1.5">
+                <button className="chip text-muted hover:text-ink" onClick={() => setManageMeals(true)} aria-label="ניהול ארוחות קבועות">
+                  <Settings2 size={16} />
+                </button>
+                <button className="chip text-muted hover:text-ink" onClick={() => setPlanningMeal(true)}>
+                  <Plus size={16} /> ארוחה אחרת
+                </button>
+              </div>
             }
           />
+          {fixedMeals.length === 0 && (
+            <button
+              onClick={() => setManageMeals(true)}
+              className="mb-3 w-full rounded-2xl border-2 border-dashed border-line py-3 text-sm font-semibold text-muted hover:text-ink"
+            >
+              + הגדרת ארוחות קבועות לתכנון מהיר
+            </button>
+          )}
           {fixedMeals.length > 0 && (
             <div className="mb-3">
               <p className="mb-1.5 text-xs font-medium text-muted">הוספה מהירה מהארוחות הקבועות:</p>
@@ -108,6 +125,11 @@ export function Plan() {
         </Card>
       </div>
 
+      <div className="mt-5">
+        <WeightCard />
+      </div>
+
+      <FixedMealsManager open={manageMeals} onClose={() => setManageMeals(false)} />
       <AddMealSheet open={planningMeal} plan onClose={() => setPlanningMeal(false)} date={date} />
       <HabitForm
         open={habitForm.open}

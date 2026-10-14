@@ -111,7 +111,7 @@ export function HabitChecklist({
       <form onSubmit={quickAdd} className="flex gap-2">
         <input
           className="input"
-          placeholder={habits.length ? 'הרגל חדש…' : 'הרגל ראשון — לדוגמה: קריאה 20 דקות'}
+          placeholder="הרגל חדש…"
           value={name}
           onChange={(e) => setName(e.target.value)}
           aria-label="הרגל חדש"

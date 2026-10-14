@@ -103,16 +103,26 @@ export function Dashboard() {
             <ul className="space-y-1.5">
               {workoutLog.map((w) => {
                 const done = isWorkoutDone(w);
+                const missed = !done && w.date < today;
                 return (
                   <li key={w.id} className="flex items-center gap-3 rounded-2xl bg-canvas px-3 py-2.5">
-                    <span
-                      className={`grid h-7 w-7 shrink-0 place-items-center rounded-full ${
-                        done ? 'bg-blue-600 text-white' : 'border-2 border-line'
-                      }`}
-                    >
-                      {done && <Check size={15} />}
+                    {missed ? (
+                      <span className="grid h-7 w-7 shrink-0 place-items-center text-lg" title="התפספס">
+                        ❌
+                      </span>
+                    ) : (
+                      <span
+                        className={`grid h-7 w-7 shrink-0 place-items-center rounded-full ${
+                          done ? 'bg-blue-600 text-white' : 'border-2 border-line'
+                        }`}
+                      >
+                        {done && <Check size={15} />}
+                      </span>
+                    )}
+                    <span className={`flex-1 font-semibold ${done ? '' : 'text-muted'}`}>
+                      {w.title || 'אימון'}
+                      {missed && <span className="ms-2 text-xs text-red-500">התפספס</span>}
                     </span>
-                    <span className={`flex-1 font-semibold ${done ? '' : 'text-muted'}`}>{w.title || 'אימון'}</span>
                     <span className="text-sm tabular-nums text-muted">
                       {weekdayShort(w.date)} {formatShort(w.date)}
                       {w.time ? ` · ${w.time}` : ''}
@@ -188,7 +198,7 @@ export function Dashboard() {
               </ResponsiveContainer>
             </div>
           ) : (
-            <EmptyState emoji="⚖️" title="רשום משקל לפחות פעמיים כדי לראות מגמה" text="אפשר לעשות את זה במסך התזונה" />
+            <EmptyState emoji="⚖️" title="רשום משקל לפחות פעמיים כדי לראות מגמה" text="אפשר לעשות את זה במסך התכנון" />
           )}
         </Card>
 

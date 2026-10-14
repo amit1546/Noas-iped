@@ -50,7 +50,7 @@ export function FixedMealsManager({ open, onClose }: { open: boolean; onClose: (
         <p className="font-semibold">{editingId ? 'עריכת ארוחה' : 'ארוחה קבועה חדשה'}</p>
         <input
           className="input bg-surface"
-          placeholder="שם הארוחה (לדוגמה: שייק חלבון)"
+          placeholder="שם הארוחה"
           value={form.name}
           onChange={(e) => setForm({ ...form, name: e.target.value })}
           aria-label="שם הארוחה"

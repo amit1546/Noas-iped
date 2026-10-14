@@ -10,6 +10,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      workbox: { cleanupOutdatedCaches: true, clientsClaim: true, skipWaiting: true },
       includeAssets: ['icon.svg', 'apple-touch-icon.png'],
       manifest: {
         name: 'היומן שלי',

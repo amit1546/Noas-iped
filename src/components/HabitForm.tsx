@@ -69,7 +69,7 @@ export function HabitForm({
             className="input"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="לדוגמה: 8 כוסות מים"
+            placeholder="שם ההרגל"
             
           />
         </div>

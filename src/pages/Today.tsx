@@ -3,7 +3,7 @@ import { Apple, CalendarRange, ChevronLeft, Dumbbell, Flame, ListChecks, Scale, 
 import { useMemo, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useCelebrate } from '../components/Confetti';
-import { ProgressRing } from '../components/ProgressRing';
+import { CalorieBar } from '../components/CalorieBar';
 import { Card, CheckCircle } from '../components/ui';
 import {
   setWorkoutDone,
@@ -20,6 +20,7 @@ import {
 import { isWorkoutDone } from '../db/schema';
 import { formatLong, formatShort, greeting, hebrewDate, todayISO } from '../lib/dates';
 import { quoteOfDay } from '../lib/quotes';
+import { sumMeals } from '../lib/stats';
 import { daysSince } from '../lib/reminder';
 import { isScheduled } from '../lib/streaks';
 
@@ -36,10 +37,10 @@ interface Item {
 }
 
 const KIND: Record<Kind, { label: string; color: string; icon: ReactNode }> = {
-  task: { label: 'משימה', color: '#6366f1', icon: <ListChecks size={14} /> },
-  habit: { label: 'הרגל', color: '#3b82f6', icon: <Flame size={14} /> },
-  workout: { label: 'אימון', color: '#2563eb', icon: <Dumbbell size={14} /> },
-  meal: { label: 'ארוחה', color: '#0ea5e9', icon: <Apple size={14} /> },
+  task: { label: 'משימה', color: '#7c3aed', icon: <ListChecks size={14} /> },
+  habit: { label: 'הרגל', color: '#059669', icon: <Flame size={14} /> },
+  workout: { label: 'אימון', color: '#ea580c', icon: <Dumbbell size={14} /> },
+  meal: { label: 'ארוחה', color: '#db2777', icon: <Apple size={14} /> },
 };
 
 export function Today() {
@@ -137,7 +138,7 @@ export function Today() {
 
       {weighDue && (
         <Link
-          to="/nutrition"
+          to="/plan"
           className="mb-5 flex items-center gap-3 rounded-3xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300"
         >
           <Scale size={20} className="shrink-0" />
@@ -147,6 +148,8 @@ export function Today() {
           <ChevronLeft size={18} />
         </Link>
       )}
+
+      <CalorieBar totals={sumMeals(meals)} planned={meals.filter((m) => m.planned).reduce((a, m) => a + m.calories, 0)} />
 
       {items.length === 0 ? (
         <Card className="text-center">
@@ -159,23 +162,15 @@ export function Today() {
         </Card>
       ) : (
         <>
-          <Card className="mb-5 flex items-center gap-4">
-            <ProgressRing value={doneCount} max={items.length} size={76} stroke={9} color="#2563eb">
-              <span className="text-lg font-extrabold tabular-nums">
-                {doneCount}/{items.length}
-              </span>
-            </ProgressRing>
-            <div className="flex-1">
-              <p className="text-lg font-bold">
-                {doneCount === items.length ? 'הכול הושלם! 🎉' : `נשארו ${items.length - doneCount} דברים להיום`}
-              </p>
-              <Link to="/plan" className="inline-flex items-center text-sm font-semibold text-blue-600 dark:text-blue-400">
-                לעריכת התכנון <ChevronLeft size={16} />
-              </Link>
-            </div>
-          </Card>
-
           <Card>
+            <div className="mb-4 flex flex-wrap gap-x-4 gap-y-1 text-xs font-semibold">
+              {(Object.keys(KIND) as Kind[]).map((k) => (
+                <span key={k} className="flex items-center gap-1.5" style={{ color: KIND[k].color }}>
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ background: KIND[k].color }} />
+                  {KIND[k].label}
+                </span>
+              ))}
+            </div>
             {timed.length > 0 && <Section title="לפי שעות" items={timed} onToggle={onToggle} />}
             {untimed.length > 0 && (
               <div className={timed.length ? 'mt-5' : ''}>
@@ -200,10 +195,11 @@ function Section({ title, items, onToggle }: { title: string; items: Item[]; onT
             <motion.li key={item.key} layout>
               <button
                 onClick={() => onToggle(item)}
-                className="flex min-h-[60px] w-full items-center gap-3 rounded-2xl border-2 px-3 text-start transition active:scale-[0.99]"
+                className="flex min-h-[60px] w-full items-center gap-3 rounded-2xl border-2 border-s-[6px] px-3 text-start transition active:scale-[0.99]"
                 style={{
-                  borderColor: item.done ? k.color : 'transparent',
-                  background: item.done ? `${k.color}10` : 'rgb(var(--canvas))',
+                  borderColor: item.done ? k.color : `${k.color}30`,
+                  borderInlineStartColor: k.color,
+                  background: item.done ? `${k.color}1f` : `${k.color}0d`,
                 }}
               >
                 <CheckCircle checked={item.done} color={k.color} />
@@ -215,8 +211,8 @@ function Section({ title, items, onToggle }: { title: string; items: Item[]; onT
                 <span className={`flex-1 font-semibold ${item.done ? 'text-muted line-through' : ''}`}>{item.title}</span>
                 {item.sub && <span className="text-sm text-muted">{item.sub}</span>}
                 <span
-                  className="flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold"
-                  style={{ color: k.color, background: `${k.color}18` }}
+                  className="flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold text-white"
+                  style={{ background: k.color }}
                 >
                   {k.icon}
                   {k.label}

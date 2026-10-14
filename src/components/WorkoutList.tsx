@@ -3,6 +3,7 @@ import { Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { addWorkout, deleteWorkout, setWorkoutDone, useWorkoutNames, useWorkoutsOn } from '../db/queries';
 import { isWorkoutDone, type ISODate } from '../db/schema';
+import { todayISO } from '../lib/dates';
 import { useCelebrate } from './Confetti';
 import { OptionalTime } from './OptionalTime';
 import { CheckCircle, IconButton } from './ui';
@@ -37,7 +38,7 @@ export function WorkoutList({ date }: { date: ISODate }) {
       <form onSubmit={submit} className="mb-3 space-y-2">
         <input
           className="input"
-          placeholder="אימון חדש… (ריצה, חדר כושר, יוגה)"
+          placeholder="אימון חדש…"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           aria-label="אימון חדש"
@@ -72,6 +73,7 @@ export function WorkoutList({ date }: { date: ISODate }) {
           <AnimatePresence initial={false}>
             {sorted.map((w) => {
               const done = isWorkoutDone(w);
+              const missed = !done && w.date < todayISO();
               return (
                 <motion.li
                   key={w.id}
@@ -82,10 +84,17 @@ export function WorkoutList({ date }: { date: ISODate }) {
                   className="flex items-center gap-2 rounded-2xl bg-canvas pe-1 ps-3"
                 >
                   <button onClick={() => toggle(w.id!, done)} className="flex min-h-[52px] flex-1 items-center gap-3 text-start">
-                    <CheckCircle checked={done} color={COLOR} />
+                    {missed ? (
+                      <span className="grid h-7 w-7 shrink-0 place-items-center text-xl" title="התפספס">
+                        ❌
+                      </span>
+                    ) : (
+                      <CheckCircle checked={done} color={COLOR} />
+                    )}
                     <span className={`flex-1 font-medium ${done ? 'text-muted line-through' : ''}`}>
                       {w.time && <span className="me-2 text-sm font-semibold tabular-nums text-blue-600 dark:text-blue-400">{w.time}</span>}
                       {w.title || 'אימון'}
+                      {missed && <span className="ms-2 text-xs font-semibold text-red-500">התפספס</span>}
                     </span>
                   </button>
                   <IconButton label="מחק אימון" onClick={() => deleteWorkout(w.id!)}>

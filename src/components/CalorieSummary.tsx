@@ -6,7 +6,16 @@ import { ProgressBar, ProgressRing } from './ProgressRing';
 
 const STATUS_COLOR = { under: '#3b82f6', near: '#f59e0b', over: '#ef4444' } as const;
 
-export function CalorieSummary({ totals, editable = true }: { totals: DayTotals; editable?: boolean }) {
+export function CalorieSummary({
+  totals,
+  planned = 0,
+  editable = true,
+}: {
+  totals: DayTotals;
+  /** Calories of meals planned but not yet eaten */
+  planned?: number;
+  editable?: boolean;
+}) {
   const settings = useSettings();
   const goal = settings.calorieGoal;
   const remaining = goal - totals.calories;
@@ -82,6 +91,15 @@ export function CalorieSummary({ totals, editable = true }: { totals: DayTotals;
           </div>
           <ProgressBar value={totals.protein} max={settings.proteinGoal} color="#3b82f6" />
         </div>
+        {planned > 0 && (
+          <p className="rounded-2xl bg-canvas px-3 py-2 text-sm">
+            <span className="font-semibold">מתוכנן עוד {planned.toLocaleString('he-IL')} קל׳</span>
+            <span className="text-muted">
+              {' '}
+              · {remaining - planned >= 0 ? `אחרי התכנון יישארו ${(remaining - planned).toLocaleString('he-IL')}` : `התכנון חורג ב-${(planned - remaining).toLocaleString('he-IL')}`}
+            </span>
+          </p>
+        )}
         <p className="text-sm font-medium" style={{ color }}>
           {status === 'under' && 'יש לך עוד מקום — תהנה! 🥗'}
           {status === 'near' && 'כמעט ביעד — שים לב 👀'}

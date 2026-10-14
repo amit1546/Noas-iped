@@ -1,4 +1,4 @@
-import { Activity, Apple, Flame, LayoutDashboard, Scale } from 'lucide-react';
+import { Activity, Apple, Check, Dumbbell, Flame, LayoutDashboard, Scale } from 'lucide-react';
 import { useMemo } from 'react';
 import {
   Bar,
@@ -14,7 +14,16 @@ import {
   YAxis,
 } from 'recharts';
 import { Card, CardTitle, EmptyState, PageHeader, Stat } from '../components/ui';
-import { useAllHabitLogs, useBodyWeights, useHabits, useMealsBetween, useSettings, useTasksBetween } from '../db/queries';
+import {
+  toggleWorkoutDay,
+  useAllHabitLogs,
+  useBodyWeights,
+  useHabits,
+  useMealsBetween,
+  useSettings,
+  useTasksBetween,
+  useWorkoutsBetween,
+} from '../db/queries';
 import { formatShort, rangeISO, shiftISO, todayISO, weekdayShort } from '../lib/dates';
 import { isScheduled } from '../lib/streaks';
 import { average, sumMeals } from '../lib/stats';
@@ -39,6 +48,8 @@ export function Dashboard() {
   const logs = useAllHabitLogs();
   const meals = useMealsBetween(from, today);
   const tasks = useTasksBetween(from, today);
+  const workouts = useWorkoutsBetween(from, today);
+  const workoutDays = new Set(workouts.map((w) => w.date));
   const weights = useBodyWeights();
 
   const habitDays = useMemo(() => {
@@ -63,6 +74,8 @@ export function Dashboard() {
   return (
     <>
       <PageHeader title="סיכום" subtitle="7 הימים האחרונים" accent="sky" icon={<LayoutDashboard />} />
+
+      <WorkoutsTile days={days} done={workoutDays} today={today} />
 
       <div className="mb-5 grid grid-cols-2 gap-3 md:grid-cols-4">
         <Stat label="השלמת הרגלים" value={`${habitAvg}%`} />
@@ -159,4 +172,50 @@ function diffLabel(d: number) {
   const r = Math.round(d * 10) / 10;
   if (r === 0) return 'ללא שינוי';
   return `${r > 0 ? '+' : ''}${r} ק״ג מההתחלה`;
+}
+
+function WorkoutsTile({ days, done, today }: { days: string[]; done: Set<string>; today: string }) {
+  const doneToday = done.has(today);
+  return (
+    <div className="card mb-3 p-4">
+      <div className="flex items-center gap-3">
+        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300">
+          <Dumbbell size={22} />
+        </span>
+        <div className="flex-1">
+          <p className="text-xs font-medium text-muted">אימונים שהשלמתי · 7 ימים</p>
+          <p className="text-2xl font-extrabold tabular-nums">{done.size}</p>
+        </div>
+        <button
+          onClick={() => toggleWorkoutDay(today)}
+          className={`flex min-h-[44px] items-center gap-1.5 rounded-2xl px-4 text-sm font-semibold transition active:scale-95 ${
+            doneToday ? 'bg-blue-600 text-white' : 'border border-line text-ink'
+          }`}
+        >
+          {doneToday ? <Check size={16} /> : <Dumbbell size={16} />}
+          {doneToday ? 'התאמנתי היום' : 'סמן אימון היום'}
+        </button>
+      </div>
+      <div className="mt-3 flex justify-between gap-1">
+        {days.map((d) => (
+          <button
+            key={d}
+            onClick={() => toggleWorkoutDay(d)}
+            aria-label={`אימון ב-${d}`}
+            aria-pressed={done.has(d)}
+            className="flex flex-1 flex-col items-center gap-1"
+          >
+            <span
+              className={`grid h-8 w-8 place-items-center rounded-full transition ${
+                done.has(d) ? 'bg-blue-600 text-white' : 'bg-canvas text-muted'
+              }`}
+            >
+              {done.has(d) ? <Check size={16} /> : null}
+            </span>
+            <span className={`text-[11px] ${d === today ? 'font-bold text-ink' : 'text-muted'}`}>{weekdayShort(d)}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
 }

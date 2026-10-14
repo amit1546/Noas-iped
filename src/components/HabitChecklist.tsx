@@ -1,9 +1,7 @@
 import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { addHabit, deleteHabit, toggleHabit, useAllHabitLogs, useHabits } from '../db/queries';
+import { deleteHabit, toggleHabit, useAllHabitLogs, useHabits } from '../db/queries';
 import type { Habit, ISODate } from '../db/schema';
-import { HABIT_COLORS } from '../lib/accent';
-import { todayISO } from '../lib/dates';
 import { currentStreak, isScheduled } from '../lib/streaks';
 import { useCelebrate } from './Confetti';
 import { CheckCircle, IconButton } from './ui';
@@ -12,10 +10,13 @@ export function HabitChecklist({
   date,
   editing,
   onEdit,
+  onAdd,
 }: {
   date: ISODate;
   editing: boolean;
   onEdit: (h: Habit) => void;
+  /** Opens the habit form (days, time, icon) prefilled with the typed name. */
+  onAdd: (name: string) => void;
 }) {
   const habits = useHabits();
   const logs = useAllHabitLogs();
@@ -31,7 +32,8 @@ export function HabitChecklist({
     return m;
   }, [logs]);
 
-  const scheduled = editing ? habits : habits.filter((h) => isScheduled(h, date));
+  const byTime = (a: Habit, b: Habit) => (a.time ?? '99:99').localeCompare(b.time ?? '99:99');
+  const scheduled = (editing ? habits : habits.filter((h) => isScheduled(h, date))).sort(byTime);
 
   const onToggle = async (habitId: number) => {
     const nowDone = await toggleHabit(habitId, date);
@@ -40,19 +42,9 @@ export function HabitChecklist({
     if (doneCount === scheduled.length) celebrate('כל ההרגלים של היום הושלמו! 🎉');
   };
 
-  // Quick add: just a name; emoji/color/days can be tweaked later via edit.
-  const quickAdd = async (e: React.FormEvent) => {
+  const quickAdd = (e: React.FormEvent) => {
     e.preventDefault();
-    const n = name.trim();
-    if (!n) return;
-    await addHabit({
-      name: n,
-      emoji: '✨',
-      color: HABIT_COLORS[habits.length % HABIT_COLORS.length],
-      days: [],
-      archived: false,
-      createdAt: todayISO(),
-    });
+    onAdd(name.trim());
     setName('');
   };
 
@@ -70,7 +62,13 @@ export function HabitChecklist({
             return (
               <li key={h.id} className="flex min-h-[56px] items-center gap-2 rounded-2xl bg-canvas pe-1 ps-3">
                 <span className="text-xl">{h.emoji}</span>
-                <span className="flex-1 font-semibold">{h.name}</span>
+                <span className="flex-1">
+                  <span className="block font-semibold leading-tight">{h.name}</span>
+                  <span className="text-xs text-muted">
+                    {describeDays(h)}
+                    {h.time ? ` · ${h.time}` : ''}
+                  </span>
+                </span>
                 <IconButton label="עריכת הרגל" onClick={() => onEdit(h)}>
                   <Pencil size={18} />
                 </IconButton>
@@ -96,7 +94,13 @@ export function HabitChecklist({
                 <span className="text-xl">{h.emoji}</span>
                 <span className="flex-1">
                   <span className="block font-semibold leading-tight">{h.name}</span>
-                  {streak > 1 && <span className="text-xs text-muted">{streak} ימים ברצף</span>}
+                  {(h.time || streak > 1) && (
+                    <span className="text-xs text-muted">
+                      {h.time}
+                      {h.time && streak > 1 ? ' · ' : ''}
+                      {streak > 1 ? `${streak} ימים ברצף` : ''}
+                    </span>
+                  )}
                 </span>
                 <CheckCircle checked={done} color={h.color} />
               </button>
@@ -116,11 +120,16 @@ export function HabitChecklist({
           type="submit"
           aria-label="הוסף הרגל"
           className="grid h-[50px] w-[50px] shrink-0 place-items-center rounded-2xl bg-blue-600 text-white transition hover:bg-blue-700 active:scale-95 disabled:opacity-40"
-          disabled={!name.trim()}
         >
           <Plus size={22} />
         </button>
       </form>
     </div>
   );
+}
+
+const DAY_NAMES = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳'];
+function describeDays(h: Habit) {
+  if (!h.days.length) return 'כל יום';
+  return h.days.map((d) => DAY_NAMES[d]).join(' ');
 }

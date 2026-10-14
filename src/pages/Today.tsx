@@ -1,4 +1,4 @@
-import { Apple, Check, ChevronLeft, Flame, ListChecks, Pencil, Settings, Sparkles } from 'lucide-react';
+import { Apple, Check, ChevronLeft, Flame, ListChecks, Pencil, Scale, Settings, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CalorieSummary } from '../components/CalorieSummary';
@@ -7,9 +7,10 @@ import { HabitChecklist } from '../components/HabitChecklist';
 import { HabitForm } from '../components/HabitForm';
 import { TaskList } from '../components/TaskList';
 import { Card, CardTitle } from '../components/ui';
-import { useMeals } from '../db/queries';
+import { useBodyWeights, useMeals } from '../db/queries';
 import type { Habit } from '../db/schema';
-import { greeting } from '../lib/dates';
+import { formatShort, greeting, todayISO } from '../lib/dates';
+import { daysSince } from '../lib/reminder';
 import { quoteOfDay } from '../lib/quotes';
 import { useSelectedDate } from '../lib/selectedDate';
 import { sumMeals } from '../lib/stats';
@@ -18,7 +19,10 @@ export function Today() {
   const [date, setDate] = useSelectedDate();
   const meals = useMeals(date);
   const [editingHabits, setEditingHabits] = useState(false);
-  const [habitForm, setHabitForm] = useState<{ open: boolean; habit?: Habit }>({ open: false });
+  const [habitForm, setHabitForm] = useState<{ open: boolean; habit?: Habit; name?: string }>({ open: false });
+  const weights = useBodyWeights();
+  const lastWeigh = weights[weights.length - 1];
+  const weighDue = !lastWeigh || daysSince(lastWeigh.date, todayISO()) >= 7;
 
   return (
     <>
@@ -40,6 +44,19 @@ export function Today() {
       </header>
 
       <DateNav date={date} onChange={setDate} />
+
+      {weighDue && (
+        <Link
+          to="/nutrition"
+          className="mb-5 flex items-center gap-3 rounded-3xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300"
+        >
+          <Scale size={20} className="shrink-0" />
+          <span className="flex-1 text-sm font-semibold">
+            {lastWeigh ? `עבר שבוע מהשקילה האחרונה (${formatShort(lastWeigh.date)}) — זמן להישקל` : 'עוד לא נשקלת — כדאי להתחיל לעקוב'}
+          </span>
+          <ChevronLeft size={18} />
+        </Link>
+      )}
 
       <div className="grid gap-5 lg:grid-cols-2">
         <Card>
@@ -72,6 +89,7 @@ export function Today() {
             date={date}
             editing={editingHabits}
             onEdit={(habit) => setHabitForm({ open: true, habit })}
+            onAdd={(name) => setHabitForm({ open: true, name })}
           />
         </Card>
 
@@ -86,11 +104,19 @@ export function Today() {
               </Link>
             }
           />
-          <CalorieSummary totals={sumMeals(meals)} />
+          <CalorieSummary
+            totals={sumMeals(meals)}
+            planned={meals.filter((m) => m.planned).reduce((a, m) => a + m.calories, 0)}
+          />
         </Card>
       </div>
 
-      <HabitForm open={habitForm.open} habit={habitForm.habit} onClose={() => setHabitForm({ open: false })} />
+      <HabitForm
+        open={habitForm.open}
+        habit={habitForm.habit}
+        initialName={habitForm.name}
+        onClose={() => setHabitForm({ open: false })}
+      />
     </>
   );
 }

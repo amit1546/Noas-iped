@@ -5,8 +5,9 @@ export interface DayTotals {
   protein: number;
 }
 
-export function sumMeals(meals: Pick<Meal, 'calories' | 'protein'>[]): DayTotals {
-  return meals.reduce(
+/** Totals of what was actually eaten (planned meals are skipped). */
+export function sumMeals(meals: Pick<Meal, 'calories' | 'protein' | 'planned'>[]): DayTotals {
+  return meals.filter((m) => !m.planned).reduce(
     (acc, m) => ({ calories: acc.calories + (m.calories || 0), protein: acc.protein + (m.protein || 0) }),
     { calories: 0, protein: 0 },
   );

@@ -1,13 +1,12 @@
 import { addMonths, endOfMonth, format, startOfMonth } from 'date-fns';
 import { he } from 'date-fns/locale';
-import { motion } from 'framer-motion';
 import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, PageHeader } from '../components/ui';
 import { useHabitLogsBetween, useHabits, useMealsBetween, useSettings, useTasksBetween } from '../db/queries';
 import type { ISODate } from '../db/schema';
-import { formatLong, fromISO, rangeISO, shiftISO, toISO, todayISO } from '../lib/dates';
+import { fromISO, rangeISO, shiftISO, toISO, todayISO } from '../lib/dates';
 import { useSelectedDate } from '../lib/selectedDate';
 import { calorieStatus, sumMeals } from '../lib/stats';
 import { isScheduled } from '../lib/streaks';
@@ -66,11 +65,10 @@ export function CalendarPage() {
     return m;
   }, [first, month, tasks, logs, meals, habits]);
 
-  const sel = summaries.get(selected);
 
   return (
     <>
-      <PageHeader title="לוח שנה" subtitle="כל החודש במבט אחד" accent="blue" icon={<CalendarDays />} />
+      <PageHeader title="לוח שנה" subtitle="לחץ על יום כדי לפתוח אותו" accent="blue" icon={<CalendarDays />} />
 
       <Card className="p-3 sm:p-5">
         <div className="mb-3 flex items-center justify-between">
@@ -81,7 +79,7 @@ export function CalendarPage() {
           >
             <ChevronRight />
           </button>
-          <h2 className="text-xl font-bold">{format(month, 'LLLL yyyy', { locale: he })}</h2>
+          <h2 className="text-2xl font-extrabold">{format(month, 'LLLL yyyy', { locale: he })}</h2>
           <button
             aria-label="חודש הבא"
             onClick={() => setMonth((m) => addMonths(m, 1))}
@@ -91,9 +89,9 @@ export function CalendarPage() {
           </button>
         </div>
 
-        <div className="grid grid-cols-7 gap-1 text-center">
+        <div className="grid grid-cols-7 gap-1.5 text-center sm:gap-2">
           {WEEKDAYS.map((d) => (
-            <div key={d} className="pb-1 text-xs font-semibold text-muted">
+            <div key={d} className="pb-1 text-sm font-bold text-muted">
               {d}
             </div>
           ))}
@@ -105,62 +103,45 @@ export function CalendarPage() {
             return (
               <button
                 key={d}
-                onClick={() => setSelected(d)}
+                onClick={() => {
+                  setSelected(d);
+                  navigate('/');
+                }}
                 disabled={!inMonth}
-                className={`relative flex aspect-square flex-col items-center justify-center rounded-2xl transition sm:aspect-[5/4] ${
-                  isSel ? 'bg-blue-600 text-white shadow-soft' : inMonth ? 'hover:bg-canvas' : 'opacity-0'
+                className={`relative flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-2xl transition active:scale-95 sm:min-h-[84px] ${
+                  !inMonth
+                    ? 'invisible'
+                    : isToday
+                      ? 'bg-blue-600 text-white shadow-soft'
+                      : isSel
+                        ? 'bg-blue-50 ring-2 ring-blue-400 dark:bg-blue-500/10'
+                        : d < today
+                          ? 'bg-canvas'
+                          : 'bg-canvas/50'
                 }`}
               >
-                <span
-                  className={`grid h-8 w-8 place-items-center rounded-full text-[15px] font-semibold tabular-nums ${
-                    isToday && !isSel ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300' : ''
-                  }`}
-                >
+                <span className={`text-lg font-bold tabular-nums sm:text-xl ${d > today && !isToday ? 'text-muted' : ''}`}>
                   {fromISO(d).getDate()}
                 </span>
-                <span className="mt-0.5 flex h-2 items-center gap-[3px]">
-                  {s && <Dots s={s} goal={calorieGoal} onBlue={isSel} />}
+                <span className="flex h-2.5 items-center gap-1">
+                  {s && <Dots s={s} goal={calorieGoal} onBlue={isToday} />}
                 </span>
               </button>
             );
           })}
         </div>
 
-        <div className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-1 border-t border-line pt-3 text-xs text-muted">
+        <div className="mt-4 flex flex-wrap justify-center gap-x-5 gap-y-2 border-t border-line pt-3 text-sm text-muted">
           <Legend color={DOT.tasks} label="משימות" />
           <Legend color={DOT.habits} label="הרגלים" />
           <Legend color={DOT.foodOk} label="תזונה ביעד" />
           <Legend color={DOT.foodOver} label="מעל היעד" />
           <span className="flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-full border-[1.5px] border-muted" /> לא הושלם
+            <span className="h-2.5 w-2.5 rounded-full border-2 border-muted" /> לא הושלם
           </span>
         </div>
       </Card>
 
-      {sel && (
-        <motion.div key={selected} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-          <Card className="mt-5">
-            <div className="mb-3 flex items-center justify-between gap-2">
-              <h3 className="text-lg font-bold">{formatLong(selected)}</h3>
-              <button
-                className="btn bg-blue-600 px-4 text-sm text-white hover:bg-blue-700"
-                onClick={() => navigate('/')}
-              >
-                פתח את היום
-              </button>
-            </div>
-            <div className="grid grid-cols-3 gap-2 text-center">
-              <Mini label="משימות" value={sel.tasksTotal ? `${sel.tasksDone}/${sel.tasksTotal}` : '—'} color={DOT.tasks} />
-              <Mini label="הרגלים" value={sel.habitsTotal ? `${sel.habitsDone}/${sel.habitsTotal}` : '—'} color={DOT.habits} />
-              <Mini
-                label="קלוריות"
-                value={sel.calories ? sel.calories.toLocaleString('he-IL') : '—'}
-                color={calorieStatus(sel.calories, calorieGoal) === 'over' ? DOT.foodOver : DOT.foodOk}
-              />
-            </div>
-          </Card>
-        </motion.div>
-      )}
     </>
   );
 }
@@ -178,8 +159,8 @@ function Dots({ s, goal, onBlue }: { s: DaySummary; goal: number; onBlue: boolea
         return (
           <span
             key={i}
-            className="h-[7px] w-[7px] rounded-full"
-            style={{ background: d.filled ? c : 'transparent', border: `1.5px solid ${c}` }}
+            className="h-2.5 w-2.5 rounded-full"
+            style={{ background: d.filled ? c : 'transparent', border: `2px solid ${c}` }}
           />
         );
       })}
@@ -190,19 +171,7 @@ function Dots({ s, goal, onBlue }: { s: DaySummary; goal: number; onBlue: boolea
 function Legend({ color, label }: { color: string; label: string }) {
   return (
     <span className="flex items-center gap-1.5">
-      <span className="h-2 w-2 rounded-full" style={{ background: color }} /> {label}
+      <span className="h-2.5 w-2.5 rounded-full" style={{ background: color }} /> {label}
     </span>
-  );
-}
-
-function Mini({ label, value, color }: { label: string; value: string; color: string }) {
-  return (
-    <div className="rounded-2xl bg-canvas p-3">
-      <p className="flex items-center justify-center gap-1.5 text-xs font-medium text-muted">
-        <span className="h-2 w-2 rounded-full" style={{ background: color }} />
-        {label}
-      </p>
-      <p className="mt-0.5 text-xl font-extrabold tabular-nums">{value}</p>
-    </div>
   );
 }

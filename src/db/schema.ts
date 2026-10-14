@@ -23,6 +23,8 @@ export interface Habit {
   days: Weekday[];
   archived: boolean;
   createdAt: ISODate;
+  /** Optional time of day, HH:mm */
+  time?: string;
 }
 
 export interface HabitLog {
@@ -74,6 +76,10 @@ export interface Meal {
   calories: number;
   protein: number;
   fixedMealId?: number;
+  /** Planned for later in the day; doesn't count toward eaten totals until marked eaten. */
+  planned?: boolean;
+  /** Optional time of day, HH:mm */
+  time?: string;
 }
 
 /** Legacy (feature removed); table kept so old backups still import. */

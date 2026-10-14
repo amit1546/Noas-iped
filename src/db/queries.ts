@@ -71,6 +71,22 @@ export async function toggleHabit(habitId: number, date: ISODate): Promise<boole
   return true;
 }
 
+/* ---------- workouts (simple "did I work out" days) ---------- */
+
+export const useWorkoutsBetween = (from: ISODate, to: ISODate) =>
+  useLiveQuery(() => db.workouts.where('date').between(from, to, true, true).toArray(), [from, to]) ?? [];
+
+/** Returns true if a workout is now logged for the date. */
+export async function toggleWorkoutDay(date: ISODate): Promise<boolean> {
+  const existing = await db.workouts.where('date').equals(date).toArray();
+  if (existing.length) {
+    await db.workouts.bulkDelete(existing.map((w) => w.id!));
+    return false;
+  }
+  await db.workouts.add({ date, type: 'other', title: '', durationMin: 0, exercises: [] });
+  return true;
+}
+
 /* ---------- nutrition ---------- */
 
 export const useFixedMeals = () =>
@@ -106,7 +122,11 @@ export async function moveFixedMeal(id: number, dir: -1 | 1) {
 
 /** Marks a fixed meal as eaten on the date, or un-marks it if already logged. */
 export async function toggleFixedMealEaten(fm: FixedMeal, date: ISODate): Promise<boolean> {
-  const existing = await db.meals.where('date').equals(date).filter((m) => m.fixedMealId === fm.id).first();
+  const existing = await db.meals
+    .where('date')
+    .equals(date)
+    .filter((m) => m.fixedMealId === fm.id && !m.planned)
+    .first();
   if (existing) {
     await db.meals.delete(existing.id!);
     return false;
@@ -123,6 +143,20 @@ export async function toggleFixedMealEaten(fm: FixedMeal, date: ISODate): Promis
 }
 
 export const addMeal = (m: Omit<Meal, 'id'>) => db.meals.add(m);
+export const updateMeal = (id: number, patch: Partial<Meal>) => db.meals.update(id, patch);
+
+export function planFixedMeal(fm: FixedMeal, date: ISODate, time?: string) {
+  return db.meals.add({
+    date,
+    mealType: fm.mealType,
+    name: fm.name,
+    calories: fm.calories,
+    protein: fm.protein,
+    fixedMealId: fm.id,
+    planned: true,
+    time,
+  });
+}
 export const deleteMeal = (id: number) => db.meals.delete(id);
 
 export const useBodyWeights = () =>

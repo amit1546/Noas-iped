@@ -17,19 +17,31 @@ const DAYS: { d: Weekday; l: string }[] = [
   { d: 6, l: 'ש' },
 ];
 
-export function HabitForm({ open, onClose, habit }: { open: boolean; onClose: () => void; habit?: Habit }) {
+export function HabitForm({
+  open,
+  onClose,
+  habit,
+  initialName = '',
+}: {
+  open: boolean;
+  onClose: () => void;
+  habit?: Habit;
+  initialName?: string;
+}) {
   const [name, setName] = useState('');
   const [emoji, setEmoji] = useState(EMOJIS[0]);
   const [color, setColor] = useState(HABIT_COLORS[0]);
   const [days, setDays] = useState<Weekday[]>([]);
+  const [time, setTime] = useState('');
 
   useEffect(() => {
     if (!open) return;
-    setName(habit?.name ?? '');
+    setName(habit?.name ?? initialName);
+    setTime(habit?.time ?? '');
     setEmoji(habit?.emoji ?? EMOJIS[0]);
     setColor(habit?.color ?? HABIT_COLORS[0]);
     setDays(habit?.days ?? []);
-  }, [open, habit]);
+  }, [open, habit, initialName]);
 
   const toggleDay = (d: Weekday) =>
     setDays((cur) => (cur.includes(d) ? cur.filter((x) => x !== d) : [...cur, d].sort()));
@@ -39,9 +51,9 @@ export function HabitForm({ open, onClose, habit }: { open: boolean; onClose: ()
     if (!name.trim()) return;
     // Selecting all 7 days is the same as "every day".
     const normalized = days.length === 7 ? [] : days;
-    if (habit?.id) await updateHabit(habit.id, { name: name.trim(), emoji, color, days: normalized });
-    else
-      await addHabit({ name: name.trim(), emoji, color, days: normalized, archived: false, createdAt: todayISO() });
+    const fields = { name: name.trim(), emoji, color, days: normalized, time: time || undefined };
+    if (habit?.id) await updateHabit(habit.id, fields);
+    else await addHabit({ ...fields, archived: false, createdAt: todayISO() });
     onClose();
   };
 
@@ -58,8 +70,41 @@ export function HabitForm({ open, onClose, habit }: { open: boolean; onClose: ()
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="לדוגמה: 8 כוסות מים"
-            autoFocus
+            
           />
+        </div>
+        <div>
+          <span className="label">באילו ימים? {days.length === 0 && <span className="text-blue-600">(כל יום)</span>}</span>
+          <div className="flex gap-1.5">
+            {DAYS.map(({ d, l }) => (
+              <button
+                type="button"
+                key={d}
+                onClick={() => toggleDay(d)}
+                aria-pressed={days.includes(d)}
+                aria-label={`יום ${l}`}
+                className={`h-11 flex-1 rounded-xl font-bold transition ${
+                  days.includes(d) ? 'text-white' : 'bg-canvas text-muted'
+                }`}
+                style={days.includes(d) ? { background: color } : undefined}
+              >
+                {l}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div>
+          <label className="label" htmlFor="habit-time">
+            שעה <span className="font-normal">(לא חובה)</span>
+          </label>
+          <div className="flex gap-2">
+            <input id="habit-time" type="time" className="input" value={time} onChange={(e) => setTime(e.target.value)} />
+            {time && (
+              <button type="button" className="btn-ghost shrink-0" onClick={() => setTime('')}>
+                נקה
+              </button>
+            )}
+          </div>
         </div>
         <div>
           <span className="label">אייקון</span>
@@ -90,24 +135,6 @@ export function HabitForm({ open, onClose, habit }: { open: boolean; onClose: ()
                 className="h-10 w-10 rounded-full transition"
                 style={{ background: c, boxShadow: color === c ? `0 0 0 3px rgb(var(--surface)), 0 0 0 5px ${c}` : 'none' }}
               />
-            ))}
-          </div>
-        </div>
-        <div>
-          <span className="label">באילו ימים? {days.length === 0 && <span className="text-blue-600">(כל יום)</span>}</span>
-          <div className="flex gap-1.5">
-            {DAYS.map(({ d, l }) => (
-              <button
-                type="button"
-                key={d}
-                onClick={() => toggleDay(d)}
-                className={`h-11 flex-1 rounded-xl font-bold transition ${
-                  days.includes(d) ? 'text-white' : 'bg-canvas text-muted'
-                }`}
-                style={days.includes(d) ? { background: color } : undefined}
-              >
-                {l}
-              </button>
             ))}
           </div>
         </div>

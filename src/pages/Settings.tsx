@@ -2,7 +2,8 @@ import { Download, Moon, Settings as SettingsIcon, ShieldCheck, Smartphone, Sun,
 import { useRef, useState } from 'react';
 import { Button, Card, CardTitle, PageHeader, Segmented } from '../components/ui';
 import { db } from '../db/db';
-import { clearAll, downloadBackup, exportBackup, importBackup, parseBackup } from '../db/backup';
+import { clearAll, exportBackup, importBackup, parseBackup, saveBackup } from '../db/backup';
+import { formatShort, todayISO } from '../lib/dates';
 import { updateSettings, useSettings } from '../db/queries';
 import type { Settings, ThemePref } from '../db/schema';
 
@@ -12,8 +13,9 @@ export function SettingsPage() {
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   const onExport = async () => {
-    downloadBackup(await exportBackup(db));
-    setMsg({ ok: true, text: 'קובץ הגיבוי הורד ✓' });
+    if (!(await saveBackup(await exportBackup(db)))) return;
+    await updateSettings({ lastBackupAt: todayISO() });
+    setMsg({ ok: true, text: 'הגיבוי נשמר ✓' });
   };
 
   const onImport = async (file: File) => {
@@ -85,6 +87,9 @@ export function SettingsPage() {
               }}
             />
           </div>
+          <p className="mt-3 text-sm text-muted">
+            {settings.lastBackupAt ? `גיבוי אחרון: ${formatShort(settings.lastBackupAt)}` : 'עוד לא גיבית'}
+          </p>
           {msg && (
             <p className={`mt-3 text-sm font-semibold ${msg.ok ? 'text-emerald-600' : 'text-red-500'}`} role="status">
               {msg.text}

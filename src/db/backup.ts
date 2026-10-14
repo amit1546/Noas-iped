@@ -62,6 +62,26 @@ export async function clearAll(database: JournalDB): Promise<void> {
   });
 }
 
+/**
+ * Opens the share sheet with the backup file where supported (on iPad/iPhone this
+ * offers "Save to Files" → iCloud Drive), otherwise downloads it.
+ * Resolves to false if the person cancelled.
+ */
+export async function saveBackup(backup: BackupFile): Promise<boolean> {
+  const name = `journal-backup-${backup.exportedAt.slice(0, 10)}.json`;
+  const file = new File([JSON.stringify(backup, null, 2)], name, { type: 'application/json' });
+  if (navigator.canShare?.({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: 'גיבוי היומן שלי' });
+      return true;
+    } catch (e) {
+      if ((e as Error).name === 'AbortError') return false;
+    }
+  }
+  downloadBackup(backup);
+  return true;
+}
+
 export function downloadBackup(backup: BackupFile) {
   const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);

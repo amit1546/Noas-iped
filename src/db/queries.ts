@@ -28,6 +28,18 @@ export const useTasks = (date: ISODate) =>
   useLiveQuery(() => db.tasks.where('date').equals(date).toArray(), [date]) ?? [];
 
 export const addTask = (t: Omit<Task, 'id'>) => db.tasks.add(t);
+
+/** Unfinished tasks from days before `today`, newest first. */
+export const useOverdueTasks = (today: ISODate) =>
+  useLiveQuery(
+    async () => (await db.tasks.where('date').below(today).filter((t) => !t.done).toArray()).sort((a, b) => b.date.localeCompare(a.date)),
+    [today],
+  ) ?? [];
+
+/** True once anything worth backing up has been saved. */
+export const useHasData = () =>
+  useLiveQuery(async () => (await db.tasks.count()) + (await db.habits.count()) + (await db.meals.count()) + (await db.workouts.count()) > 0, []) ??
+  false;
 export const toggleTask = (t: Task) => db.tasks.update(t.id!, { done: !t.done });
 export const deleteTask = (id: number) => db.tasks.delete(id);
 export const moveTask = (id: number, date: ISODate) => db.tasks.update(id, { date });

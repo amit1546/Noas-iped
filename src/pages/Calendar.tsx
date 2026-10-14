@@ -4,12 +4,11 @@ import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, PageHeader } from '../components/ui';
-import { useHabitLogsBetween, useHabits, useMealsBetween, useTasksBetween, useWorkoutsBetween } from '../db/queries';
+import { useHabitLogsBetween, useHabits, useTasksBetween, useWorkoutsBetween } from '../db/queries';
 import { isWorkoutDone } from '../db/schema';
 import type { ISODate } from '../db/schema';
 import { fromISO, rangeISO, shiftISO, toISO, todayISO } from '../lib/dates';
 import { useSelectedDate } from '../lib/selectedDate';
-import { sumMeals } from '../lib/stats';
 import { KIND_COLORS } from '../lib/kinds';
 import { isScheduled } from '../lib/streaks';
 
@@ -17,7 +16,6 @@ const DOT = {
   tasks: KIND_COLORS.task,
   habits: KIND_COLORS.habit,
   workouts: KIND_COLORS.workout,
-  foodOk: KIND_COLORS.meal,
 };
 
 const WEEKDAYS = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳'];
@@ -29,8 +27,6 @@ interface DaySummary {
   habitsDone: number;
   workoutsTotal: number;
   workoutsDone: number;
-  calories: number;
-  plannedMeals: number;
 }
 
 export function CalendarPage() {
@@ -48,7 +44,6 @@ export function CalendarPage() {
 
   const tasks = useTasksBetween(first, last);
   const logs = useHabitLogsBetween(first, last);
-  const meals = useMealsBetween(first, last);
   const workouts = useWorkoutsBetween(first, last);
   const habits = useHabits();
 
@@ -66,12 +61,10 @@ export function CalendarPage() {
         habitsDone: sched.filter((h) => doneIds.has(h.id!)).length,
         workoutsTotal: workouts.filter((w) => w.date === d).length,
         workoutsDone: workouts.filter((w) => w.date === d && isWorkoutDone(w)).length,
-        calories: sumMeals(meals.filter((x) => x.date === d)).calories,
-        plannedMeals: meals.filter((x) => x.date === d && x.planned).length,
       });
     }
     return m;
-  }, [first, month, tasks, logs, meals, habits, workouts]);
+  }, [first, month, tasks, logs, habits, workouts]);
 
 
   return (
@@ -143,7 +136,6 @@ export function CalendarPage() {
           <Legend color={DOT.tasks} label="משימות" />
           <Legend color={DOT.habits} label="הרגלים" />
           <Legend color={DOT.workouts} label="אימונים" />
-          <Legend color={DOT.foodOk} label="ארוחות" />
         </div>
       </Card>
 
@@ -157,9 +149,6 @@ function Dots({ s }: { s: DaySummary }) {
   if (s.tasksTotal) dots.push({ color: DOT.tasks, filled: s.tasksDone === s.tasksTotal });
   if (s.habitsDone) dots.push({ color: DOT.habits, filled: s.habitsDone === s.habitsTotal });
   if (s.workoutsTotal) dots.push({ color: DOT.workouts, filled: s.workoutsDone === s.workoutsTotal });
-  // Meals: filled once something was eaten, hollow while only planned.
-  if (s.calories) dots.push({ color: DOT.foodOk, filled: true });
-  else if (s.plannedMeals) dots.push({ color: DOT.foodOk, filled: false });
   return (
     <>
       {dots.map((d, i) => {

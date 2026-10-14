@@ -1,24 +1,46 @@
 import { motion } from 'framer-motion';
-import { Apple, CalendarRange, ChevronLeft, Dumbbell, Flame, ListChecks, Scale, Settings, Sparkles } from 'lucide-react';
+import {
+  Apple,
+  ArrowLeftCircle,
+  CalendarRange,
+  Check,
+  ChevronLeft,
+  Dumbbell,
+  Flame,
+  ListChecks,
+  Scale,
+  Settings,
+  ShieldCheck,
+  Sparkles,
+  Trash2,
+} from 'lucide-react';
 import { useMemo, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useCelebrate } from '../components/Confetti';
 import { CalorieBar } from '../components/CalorieBar';
 import { Card, CheckCircle } from '../components/ui';
+import { exportBackup, saveBackup } from '../db/backup';
+import { db } from '../db/db';
 import {
+  deleteTask,
+  moveTask,
   setWorkoutDone,
   toggleHabit,
   toggleTask,
   updateMeal,
+  updateSettings,
   useAllHabitLogs,
   useBodyWeights,
   useHabits,
+  useHasData,
   useMeals,
+  useOverdueTasks,
+  useSettings,
   useTasks,
   useWorkoutsOn,
 } from '../db/queries';
 import { isWorkoutDone } from '../db/schema';
-import { formatLong, formatShort, greeting, hebrewDate, todayISO } from '../lib/dates';
+import { formatLong, formatShort, greeting, todayISO } from '../lib/dates';
 import { KIND_COLORS } from '../lib/kinds';
 import { quoteOfDay } from '../lib/quotes';
 import { sumMeals } from '../lib/stats';
@@ -53,6 +75,14 @@ export function Today() {
   const meals = useMeals(date);
   const weights = useBodyWeights();
   const celebrate = useCelebrate();
+  const overdue = useOverdueTasks(date);
+  const settings = useSettings();
+  const hasData = useHasData();
+  const backupDue = hasData && (!settings.lastBackupAt || daysSince(settings.lastBackupAt, date) >= 7);
+
+  const backupNow = async () => {
+    if (await saveBackup(await exportBackup(db))) await updateSettings({ lastBackupAt: date });
+  };
 
   const lastWeigh = weights[weights.length - 1];
   const weighDue = !lastWeigh || daysSince(lastWeigh.date, date) >= 7;
@@ -121,7 +151,7 @@ export function Today() {
         <div>
           <h1 className="text-3xl font-extrabold">{greeting()} 👋</h1>
           <p className="mt-1 text-sm text-muted">
-            {formatLong(date)} · {hebrewDate(date)}
+            {formatLong(date)}
           </p>
           <p className="mt-1 flex items-center gap-1.5 text-muted">
             <Sparkles size={16} className="shrink-0 text-amber-500" />
@@ -150,7 +180,65 @@ export function Today() {
         </Link>
       )}
 
-      <CalorieBar totals={sumMeals(meals)} planned={meals.filter((m) => m.planned).reduce((a, m) => a + m.calories, 0)} />
+      {backupDue && (
+        <button
+          onClick={backupNow}
+          className="mb-5 flex w-full items-center gap-3 rounded-3xl border border-blue-200 bg-blue-50 px-4 py-3 text-start text-blue-800 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-200"
+        >
+          <ShieldCheck size={20} className="shrink-0" />
+          <span className="flex-1 text-sm font-semibold">
+            {settings.lastBackupAt
+              ? `עבר שבוע מהגיבוי האחרון (${formatShort(settings.lastBackupAt)}) — לגבות עכשיו?`
+              : 'הנתונים שמורים רק במכשיר הזה — כדאי לגבות'}
+          </span>
+          <span className="rounded-xl bg-blue-600 px-3 py-1.5 text-sm font-bold text-white">גבה</span>
+        </button>
+      )}
+
+      {overdue.length > 0 && (
+        <Card className="mb-5">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <p className="font-bold">נשאר מימים קודמים</p>
+            <button
+              onClick={() => Promise.all(overdue.map((t) => moveTask(t.id!, date)))}
+              className="chip text-sm font-semibold text-blue-600 dark:text-blue-400"
+            >
+              <ArrowLeftCircle size={15} /> הכול להיום
+            </button>
+          </div>
+          <ul className="space-y-1.5">
+            {overdue.map((t) => (
+              <li key={t.id} className="flex items-center gap-2 rounded-2xl bg-canvas py-1.5 pe-1 ps-3">
+                <span className="flex-1">
+                  <span className="block font-semibold leading-tight">{t.title}</span>
+                  <span className="text-xs text-muted">מ{formatLong(t.date)}</span>
+                </span>
+                <button
+                  onClick={() => moveTask(t.id!, date)}
+                  className="min-h-[40px] rounded-xl px-3 text-sm font-semibold text-white"
+                  style={{ background: KIND_COLORS.task }}
+                >
+                  להיום
+                </button>
+                <button
+                  onClick={() => toggleTask(t)}
+                  aria-label={`סמן ${t.title} כבוצע`}
+                  className="grid h-10 w-10 place-items-center rounded-xl text-muted hover:text-ink"
+                >
+                  <Check size={18} />
+                </button>
+                <button
+                  onClick={() => deleteTask(t.id!)}
+                  aria-label={`מחק ${t.title}`}
+                  className="grid h-10 w-10 place-items-center rounded-xl text-muted hover:text-ink"
+                >
+                  <Trash2 size={18} />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
 
       {items.length === 0 ? (
         <Card className="text-center">
@@ -181,6 +269,8 @@ export function Today() {
           </Card>
         </>
       )}
+
+      <CalorieBar totals={sumMeals(meals)} planned={meals.filter((m) => m.planned).reduce((a, m) => a + m.calories, 0)} />
     </>
   );
 }

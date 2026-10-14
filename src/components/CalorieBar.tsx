@@ -8,7 +8,7 @@ const STATUS_COLOR = { under: '#2563eb', near: '#f59e0b', over: '#ef4444' } as c
 
 /** Compact "eaten / left" calorie strip with an inline-editable daily goal. */
 export function CalorieBar({ totals, planned = 0 }: { totals: DayTotals; planned?: number }) {
-  const { calorieGoal: goal } = useSettings();
+  const { calorieGoal: goal, proteinGoal } = useSettings();
   const left = goal - totals.calories;
   const color = STATUS_COLOR[calorieStatus(totals.calories, goal)];
   const [editing, setEditing] = useState(false);
@@ -23,7 +23,7 @@ export function CalorieBar({ totals, planned = 0 }: { totals: DayTotals; planned
   };
 
   return (
-    <div className="card mb-5 px-4 py-3">
+    <div className="card mt-5 px-4 py-3">
       <div className="mb-2 flex items-center gap-3 text-sm">
         <Flame size={18} style={{ color }} className="shrink-0" />
         <span>
@@ -62,6 +62,13 @@ export function CalorieBar({ totals, planned = 0 }: { totals: DayTotals; planned
         </span>
       </div>
       <ProgressBar value={totals.calories} max={goal} color={color} />
+      <div className="mb-1 mt-2.5 flex items-center gap-2 text-sm">
+        <span className="font-medium text-muted">חלבון</span>
+        <span className="ms-auto tabular-nums">
+          <b>{totals.protein}</b> <span className="text-muted">/ {proteinGoal} גר׳</span>
+        </span>
+      </div>
+      <ProgressBar value={totals.protein} max={proteinGoal} color="#7c3aed" />
       {planned > 0 && <p className="mt-1.5 text-xs text-muted">ועוד {planned.toLocaleString('he-IL')} קל׳ מתוכננות להיום</p>}
     </div>
   );

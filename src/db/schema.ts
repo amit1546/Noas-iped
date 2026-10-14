@@ -110,6 +110,8 @@ export interface Settings {
   calorieGoal: number;
   proteinGoal: number;
   theme: ThemePref;
+  /** Date of the last backup export */
+  lastBackupAt?: ISODate;
 }
 
 export const DEFAULT_SETTINGS: Settings = {

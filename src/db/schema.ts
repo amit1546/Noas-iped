@@ -9,6 +9,8 @@ export interface Task {
   done: boolean;
   priority: Priority;
   notes?: string;
+  /** Optional time of day, HH:mm */
+  time?: string;
 }
 
 /** 0 = Sunday ... 6 = Saturday */
@@ -54,7 +56,13 @@ export interface Workout {
   durationMin: number;
   notes?: string;
   exercises: Exercise[];
+  /** Optional time of day, HH:mm */
+  time?: string;
+  /** Planned workouts are added with done=false; older entries without the flag count as done. */
+  done?: boolean;
 }
+
+export const isWorkoutDone = (w: Pick<Workout, 'done'>) => w.done !== false;
 
 export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 

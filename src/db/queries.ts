@@ -76,16 +76,21 @@ export async function toggleHabit(habitId: number, date: ISODate): Promise<boole
 export const useWorkoutsBetween = (from: ISODate, to: ISODate) =>
   useLiveQuery(() => db.workouts.where('date').between(from, to, true, true).toArray(), [from, to]) ?? [];
 
-/** Returns true if a workout is now logged for the date. */
-export async function toggleWorkoutDay(date: ISODate): Promise<boolean> {
-  const existing = await db.workouts.where('date').equals(date).toArray();
-  if (existing.length) {
-    await db.workouts.bulkDelete(existing.map((w) => w.id!));
-    return false;
-  }
-  await db.workouts.add({ date, type: 'other', title: '', durationMin: 0, exercises: [] });
-  return true;
-}
+export const useWorkoutsOn = (date: ISODate) =>
+  useLiveQuery(() => db.workouts.where('date').equals(date).toArray(), [date]) ?? [];
+
+/** Distinct workout names used before, for quick suggestions. */
+export const useWorkoutNames = () =>
+  useLiveQuery(async () => {
+    const all = await db.workouts.toArray();
+    return [...new Set(all.map((w) => w.title).filter(Boolean))];
+  }, []) ?? [];
+
+export const addWorkout = (w: { title: string; date: ISODate; time?: string }) =>
+  db.workouts.add({ ...w, type: 'other', durationMin: 0, exercises: [], done: false });
+
+export const setWorkoutDone = (id: number, done: boolean) => db.workouts.update(id, { done });
+export const deleteWorkout = (id: number) => db.workouts.delete(id);
 
 /* ---------- nutrition ---------- */
 

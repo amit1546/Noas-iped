@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowLeftCircle, Flag, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeftCircle, Clock, Flag, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { addTask, deleteTask, moveTask, toggleTask, useTasks } from '../db/queries';
 import type { ISODate, Priority, Task } from '../db/schema';
@@ -15,24 +15,29 @@ export function TaskList({ date }: { date: ISODate }) {
   const tasks = useTasks(date);
   const [title, setTitle] = useState('');
   const [priority, setPriority] = useState<Priority>('medium');
+  const [time, setTime] = useState('');
 
   const sorted = [...tasks].sort(
-    (a, b) => Number(a.done) - Number(b.done) || PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority],
+    (a, b) =>
+      Number(a.done) - Number(b.done) ||
+      (a.time ?? '99:99').localeCompare(b.time ?? '99:99') ||
+      PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority],
   );
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     const t = title.trim();
     if (!t) return;
-    await addTask({ title: t, date, done: false, priority });
+    await addTask({ title: t, date, done: false, priority, time: time || undefined });
     setTitle('');
+    setTime('');
   };
 
   const canCarry = date < todayISO();
 
   return (
     <div>
-      <form onSubmit={submit} className="mb-3 flex gap-2">
+      <form onSubmit={submit} className="mb-3 space-y-2">
         <input
           className="input"
           placeholder="משימה חדשה…"
@@ -40,6 +45,18 @@ export function TaskList({ date }: { date: ISODate }) {
           onChange={(e) => setTitle(e.target.value)}
           aria-label="משימה חדשה"
         />
+        <div className="flex gap-2">
+        <label className="flex h-[50px] flex-1 items-center gap-2 rounded-2xl border border-line bg-canvas px-3 text-muted">
+          <Clock size={18} className="shrink-0" />
+          <span className="shrink-0 text-sm">שעה</span>
+          <input
+            type="time"
+            value={time}
+            onChange={(e) => setTime(e.target.value)}
+            className="w-full bg-transparent text-ink outline-none"
+            aria-label="שעה למשימה"
+          />
+        </label>
         <button
           type="button"
           onClick={() => setPriority(NEXT_PRIORITY[priority])}
@@ -57,6 +74,7 @@ export function TaskList({ date }: { date: ISODate }) {
         >
           <Plus size={22} />
         </button>
+        </div>
       </form>
 
       {sorted.length === 0 ? (
@@ -86,6 +104,9 @@ function TaskRow({ task, canCarry }: { task: Task; canCarry: boolean }) {
       <button onClick={() => toggleTask(task)} className="flex min-h-[52px] flex-1 items-center gap-3 text-start">
         <CheckCircle checked={task.done} color="#3b82f6" />
         <span className={`flex-1 font-medium transition ${task.done ? 'text-muted line-through' : ''}`}>
+          {task.time && (
+            <span className="me-2 text-sm font-semibold tabular-nums text-blue-600 dark:text-blue-400">{task.time}</span>
+          )}
           {task.title}
         </span>
         <span className="h-2 w-2 rounded-full" style={{ background: PRIORITY_COLOR[task.priority] }} />

@@ -1,4 +1,5 @@
 import { Activity, Apple, Check, Dumbbell, Flame, LayoutDashboard, Scale } from 'lucide-react';
+import { isWorkoutDone } from '../db/schema';
 import { useMemo } from 'react';
 import {
   Bar,
@@ -15,7 +16,6 @@ import {
 } from 'recharts';
 import { Card, CardTitle, EmptyState, PageHeader, Stat } from '../components/ui';
 import {
-  toggleWorkoutDay,
   useAllHabitLogs,
   useBodyWeights,
   useHabits,
@@ -49,7 +49,8 @@ export function Dashboard() {
   const meals = useMealsBetween(from, today);
   const tasks = useTasksBetween(from, today);
   const workouts = useWorkoutsBetween(from, today);
-  const workoutDays = new Set(workouts.map((w) => w.date));
+  const doneWorkouts = workouts.filter(isWorkoutDone);
+  const workoutLog = [...workouts].sort((a, b) => b.date.localeCompare(a.date) || (b.time ?? '').localeCompare(a.time ?? ''));
   const weights = useBodyWeights();
 
   const habitDays = useMemo(() => {
@@ -75,10 +76,13 @@ export function Dashboard() {
     <>
       <PageHeader title="סיכום" subtitle="7 הימים האחרונים" accent="sky" icon={<LayoutDashboard />} />
 
-      <WorkoutsTile days={days} done={workoutDays} today={today} />
-
-      <div className="mb-5 grid grid-cols-2 gap-3 md:grid-cols-4">
+      <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         <Stat label="השלמת הרגלים" value={`${habitAvg}%`} />
+        <Stat
+          label="אימונים שבוצעו"
+          value={doneWorkouts.length}
+          sub={workouts.length > doneWorkouts.length ? `מתוך ${workouts.length} מתוכננים` : 'אימונים'}
+        />
         <Stat label="משימות שהושלמו" value={`${tasks.filter((t) => t.done).length}/${tasks.length}`} />
         <Stat
           label="ממוצע קלוריות"
@@ -93,6 +97,35 @@ export function Dashboard() {
       </div>
 
       <div className="grid gap-5 lg:grid-cols-2">
+        <Card>
+          <CardTitle title="יומן אימונים" icon={<Dumbbell size={18} />} />
+          {workoutLog.length ? (
+            <ul className="space-y-1.5">
+              {workoutLog.map((w) => {
+                const done = isWorkoutDone(w);
+                return (
+                  <li key={w.id} className="flex items-center gap-3 rounded-2xl bg-canvas px-3 py-2.5">
+                    <span
+                      className={`grid h-7 w-7 shrink-0 place-items-center rounded-full ${
+                        done ? 'bg-blue-600 text-white' : 'border-2 border-line'
+                      }`}
+                    >
+                      {done && <Check size={15} />}
+                    </span>
+                    <span className={`flex-1 font-semibold ${done ? '' : 'text-muted'}`}>{w.title || 'אימון'}</span>
+                    <span className="text-sm tabular-nums text-muted">
+                      {weekdayShort(w.date)} {formatShort(w.date)}
+                      {w.time ? ` · ${w.time}` : ''}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <EmptyState emoji="💪" title="אין אימונים ב-7 הימים האחרונים" text="מוסיפים אימון בכרטיס האימונים במסך היום" />
+          )}
+        </Card>
+
         <Card>
           <CardTitle title="הרגלים — % השלמה יומי" icon={<Flame size={18} />} />
           {habits.length ? (
@@ -174,48 +207,3 @@ function diffLabel(d: number) {
   return `${r > 0 ? '+' : ''}${r} ק״ג מההתחלה`;
 }
 
-function WorkoutsTile({ days, done, today }: { days: string[]; done: Set<string>; today: string }) {
-  const doneToday = done.has(today);
-  return (
-    <div className="card mb-3 p-4">
-      <div className="flex items-center gap-3">
-        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300">
-          <Dumbbell size={22} />
-        </span>
-        <div className="flex-1">
-          <p className="text-xs font-medium text-muted">אימונים שהשלמתי · 7 ימים</p>
-          <p className="text-2xl font-extrabold tabular-nums">{done.size}</p>
-        </div>
-        <button
-          onClick={() => toggleWorkoutDay(today)}
-          className={`flex min-h-[44px] items-center gap-1.5 rounded-2xl px-4 text-sm font-semibold transition active:scale-95 ${
-            doneToday ? 'bg-blue-600 text-white' : 'border border-line text-ink'
-          }`}
-        >
-          {doneToday ? <Check size={16} /> : <Dumbbell size={16} />}
-          {doneToday ? 'התאמנתי היום' : 'סמן אימון היום'}
-        </button>
-      </div>
-      <div className="mt-3 flex justify-between gap-1">
-        {days.map((d) => (
-          <button
-            key={d}
-            onClick={() => toggleWorkoutDay(d)}
-            aria-label={`אימון ב-${d}`}
-            aria-pressed={done.has(d)}
-            className="flex flex-1 flex-col items-center gap-1"
-          >
-            <span
-              className={`grid h-8 w-8 place-items-center rounded-full transition ${
-                done.has(d) ? 'bg-blue-600 text-white' : 'bg-canvas text-muted'
-              }`}
-            >
-              {done.has(d) ? <Check size={16} /> : null}
-            </span>
-            <span className={`text-[11px] ${d === today ? 'font-bold text-ink' : 'text-muted'}`}>{weekdayShort(d)}</span>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}

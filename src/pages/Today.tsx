@@ -1,11 +1,14 @@
-import { Apple, Check, ChevronLeft, Flame, ListChecks, Pencil, Scale, Settings, Sparkles } from 'lucide-react';
+import { Apple, CalendarClock, Check, ChevronLeft, Dumbbell, Flame, ListChecks, Pencil, Plus, Scale, Settings, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CalorieSummary } from '../components/CalorieSummary';
 import { DateNav } from '../components/DateNav';
 import { HabitChecklist } from '../components/HabitChecklist';
 import { HabitForm } from '../components/HabitForm';
+import { PlannedMeals } from '../components/PlannedMeals';
 import { TaskList } from '../components/TaskList';
+import { WorkoutList } from '../components/WorkoutList';
+import { AddMealSheet } from './Nutrition';
 import { Card, CardTitle } from '../components/ui';
 import { useBodyWeights, useMeals } from '../db/queries';
 import type { Habit } from '../db/schema';
@@ -20,6 +23,8 @@ export function Today() {
   const meals = useMeals(date);
   const [editingHabits, setEditingHabits] = useState(false);
   const [habitForm, setHabitForm] = useState<{ open: boolean; habit?: Habit; name?: string }>({ open: false });
+  const [addingWorkout, setAddingWorkout] = useState(false);
+  const [planningMeal, setPlanningMeal] = useState(false);
   const weights = useBodyWeights();
   const lastWeigh = weights[weights.length - 1];
   const weighDue = !lastWeigh || daysSince(lastWeigh.date, todayISO()) >= 7;
@@ -93,6 +98,33 @@ export function Today() {
           />
         </Card>
 
+        <Card>
+          <CardTitle
+            title="אימונים"
+            icon={<Dumbbell size={18} />}
+            action={
+              <button className="chip text-muted hover:text-ink" onClick={() => setAddingWorkout(true)}>
+                <Plus size={16} /> אימון
+              </button>
+            }
+          />
+          <WorkoutList date={date} adding={addingWorkout} onCloseAdd={() => setAddingWorkout(false)} />
+        </Card>
+
+        <Card>
+          <CardTitle
+            title="תכנון ארוחות"
+            accent="sky"
+            icon={<CalendarClock size={18} />}
+            action={
+              <button className="chip text-muted hover:text-ink" onClick={() => setPlanningMeal(true)}>
+                <Plus size={16} /> ארוחה
+              </button>
+            }
+          />
+          <PlannedMeals meals={meals} hint={false} />
+        </Card>
+
         <Card className="lg:col-span-2">
           <CardTitle
             title="תזונה"
@@ -111,6 +143,7 @@ export function Today() {
         </Card>
       </div>
 
+      <AddMealSheet open={planningMeal} plan onClose={() => setPlanningMeal(false)} date={date} />
       <HabitForm
         open={habitForm.open}
         habit={habitForm.habit}

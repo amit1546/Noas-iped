@@ -1,10 +1,11 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { Apple, BellRing, CalendarClock, CalendarPlus, Check, Plus, Scale, Settings2, Trash2, UtensilsCrossed } from 'lucide-react';
+import { Apple, BellRing, CalendarClock, CalendarPlus, Plus, Scale, Settings2, Trash2, UtensilsCrossed } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { BottomSheet } from '../components/BottomSheet';
 import { CalorieSummary } from '../components/CalorieSummary';
 import { Fab } from '../components/Fab';
 import { FixedMealsManager } from '../components/FixedMealsManager';
+import { byMealTime, PlannedMeals } from '../components/PlannedMeals';
 import { Button, Card, CardTitle, CheckCircle, EmptyState, IconButton, PageHeader, Segmented } from '../components/ui';
 import {
   addMeal,
@@ -13,12 +14,11 @@ import {
   saveFixedMeal,
   setBodyWeight,
   toggleFixedMealEaten,
-  updateMeal,
   useBodyWeights,
   useFixedMeals,
   useMeals,
 } from '../db/queries';
-import { MEAL_TYPE_LABELS, MEAL_TYPE_ORDER, type Meal, type MealType } from '../db/schema';
+import { MEAL_TYPE_LABELS, MEAL_TYPE_ORDER, type MealType } from '../db/schema';
 import { formatShort, todayISO } from '../lib/dates';
 import { daysSince, downloadICS, weeklyReminderICS } from '../lib/reminder';
 import { sumMeals } from '../lib/stats';
@@ -31,10 +31,6 @@ function defaultMealType(): MealType {
   return 'snack';
 }
 
-const byTime = (a: Meal, b: Meal) =>
-  (a.time ?? '99:99').localeCompare(b.time ?? '99:99') ||
-  MEAL_TYPE_ORDER.indexOf(a.mealType) - MEAL_TYPE_ORDER.indexOf(b.mealType);
-
 export function Nutrition() {
   const date = todayISO();
   const meals = useMeals(date);
@@ -43,7 +39,7 @@ export function Nutrition() {
   const [sheet, setSheet] = useState<{ open: boolean; plan: boolean }>({ open: false, plan: false });
 
   const eaten = meals.filter((m) => !m.planned);
-  const planned = meals.filter((m) => m.planned).sort(byTime);
+  const planned = meals.filter((m) => m.planned).sort(byMealTime);
   const totals = sumMeals(meals);
   const plannedCalories = planned.reduce((a, m) => a + m.calories, 0);
   const activeFixed = fixedMeals.filter((m) => m.active);
@@ -70,49 +66,7 @@ export function Nutrition() {
               </button>
             }
           />
-          {planned.length === 0 ? (
-            <p className="py-2 text-center text-sm text-muted">
-              אין ארוחות מתוכננות. אפשר לתכנן ארוחה חדשה או ללחוץ על <CalendarPlus size={14} className="inline" /> ליד ארוחה קבועה
-            </p>
-          ) : (
-            <ul className="space-y-2">
-              <AnimatePresence initial={false}>
-                {planned.map((m) => (
-                  <motion.li
-                    key={m.id}
-                    layout
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="flex items-center gap-2 rounded-2xl border border-dashed border-sky-300 bg-sky-50/60 py-1.5 pe-1 ps-2 dark:border-sky-500/40 dark:bg-sky-500/5"
-                  >
-                    <input
-                      type="time"
-                      value={m.time ?? ''}
-                      onChange={(e) => updateMeal(m.id!, { time: e.target.value || undefined })}
-                      className="w-[108px] shrink-0 rounded-xl border border-line bg-surface px-1.5 py-1.5 text-center text-sm font-semibold tabular-nums"
-                      aria-label={`שעה ל${m.name}`}
-                    />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate font-semibold">{m.name}</span>
-                      <span className="text-xs text-muted">
-                        {MEAL_TYPE_LABELS[m.mealType]} · {m.calories} קל׳
-                      </span>
-                    </span>
-                    <button
-                      onClick={() => updateMeal(m.id!, { planned: false })}
-                      className="flex min-h-[40px] items-center gap-1 rounded-xl bg-sky-600 px-3 text-sm font-semibold text-white active:scale-95"
-                    >
-                      <Check size={16} /> אכלתי
-                    </button>
-                    <IconButton label="הסר מהתכנון" onClick={() => deleteMeal(m.id!)}>
-                      <Trash2 size={18} />
-                    </IconButton>
-                  </motion.li>
-                ))}
-              </AnimatePresence>
-            </ul>
-          )}
+          <PlannedMeals meals={meals} />
         </Card>
 
         <Card className="lg:col-span-2">
@@ -198,7 +152,7 @@ export function Nutrition() {
           ) : (
             <div className="space-y-4">
               {MEAL_TYPE_ORDER.map((type) => {
-                const list = eaten.filter((m) => m.mealType === type).sort(byTime);
+                const list = eaten.filter((m) => m.mealType === type).sort(byMealTime);
                 if (!list.length) return null;
                 return (
                   <div key={type}>
@@ -253,7 +207,7 @@ export function Nutrition() {
   );
 }
 
-function AddMealSheet({
+export function AddMealSheet({
   open,
   onClose,
   date,

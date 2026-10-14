@@ -1,24 +1,29 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { formatLong, hebrewDate, shiftISO, todayISO } from '../lib/dates';
+import { format } from 'date-fns';
+import { he } from 'date-fns/locale';
+import { fromISO, hebrewDate, shiftISO, todayISO } from '../lib/dates';
 import type { ISODate } from '../db/schema';
 
 export function DateNav({ date, onChange }: { date: ISODate; onChange: (d: ISODate) => void }) {
   const isToday = date === todayISO();
   return (
-    <div className="card mb-5 flex items-center justify-between p-2">
+    <div className="card mb-5 flex items-center justify-between p-3">
       <button
         aria-label="יום קודם"
         onClick={() => onChange(shiftISO(date, -1))}
-        className="grid h-11 w-11 place-items-center rounded-xl text-muted hover:bg-line/60 hover:text-ink"
+        className="grid h-14 w-14 place-items-center rounded-2xl bg-canvas text-ink hover:bg-line/60 active:scale-95"
       >
-        <ChevronRight />
+        <ChevronRight size={28} />
       </button>
-      <label className="relative flex flex-1 cursor-pointer flex-col items-center">
-        <span className="font-bold">{isToday ? 'היום' : formatLong(date)}</span>
-        <span className="text-xs text-muted">
-          {isToday ? formatLong(date) : hebrewDate(date)}
-          {isToday && ` · ${hebrewDate(date)}`}
+      <label className="relative flex flex-1 cursor-pointer flex-col items-center py-1">
+        <span className="flex items-center gap-2 text-3xl font-extrabold leading-tight">
+          {format(fromISO(date), 'EEEE', { locale: he })}
+          {isToday && <span className="rounded-full bg-blue-600 px-2.5 py-0.5 text-sm font-bold text-white">היום</span>}
         </span>
+        <span className="mt-0.5 text-xl font-bold text-blue-600 dark:text-blue-400">
+          {format(fromISO(date), 'd בMMMM yyyy', { locale: he })}
+        </span>
+        <span className="text-sm text-muted">{hebrewDate(date)}</span>
         <input
           type="date"
           value={date}
@@ -30,9 +35,9 @@ export function DateNav({ date, onChange }: { date: ISODate; onChange: (d: ISODa
       <button
         aria-label="יום הבא"
         onClick={() => onChange(shiftISO(date, 1))}
-        className="grid h-11 w-11 place-items-center rounded-xl text-muted hover:bg-line/60 hover:text-ink"
+        className="grid h-14 w-14 place-items-center rounded-2xl bg-canvas text-ink hover:bg-line/60 active:scale-95"
       >
-        <ChevronLeft />
+        <ChevronLeft size={28} />
       </button>
     </div>
   );

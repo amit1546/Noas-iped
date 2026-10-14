@@ -1,9 +1,10 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowLeftCircle, Clock, Flag, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeftCircle, Flag, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { addTask, deleteTask, moveTask, toggleTask, useTasks } from '../db/queries';
 import type { ISODate, Priority, Task } from '../db/schema';
 import { shiftISO, todayISO } from '../lib/dates';
+import { OptionalTime } from './OptionalTime';
 import { CheckCircle, IconButton } from './ui';
 
 const PRIORITY_COLOR: Record<Priority, string> = { high: '#ef4444', medium: '#f59e0b', low: '#94a3b8' };
@@ -45,22 +46,13 @@ export function TaskList({ date }: { date: ISODate }) {
           onChange={(e) => setTitle(e.target.value)}
           aria-label="משימה חדשה"
         />
-        <div className="flex gap-2">
-        <label className="flex h-[50px] flex-1 items-center gap-2 rounded-2xl border border-line bg-canvas px-3 text-muted">
-          <Clock size={18} className="shrink-0" />
-          <span className="shrink-0 text-sm">שעה</span>
-          <input
-            type="time"
-            value={time}
-            onChange={(e) => setTime(e.target.value)}
-            className="w-full bg-transparent text-ink outline-none"
-            aria-label="שעה למשימה"
-          />
-        </label>
+        <div className="flex items-center gap-2">
+          <OptionalTime value={time} onChange={setTime} label="שעה למשימה" />
+          <span className="flex-1" />
         <button
           type="button"
           onClick={() => setPriority(NEXT_PRIORITY[priority])}
-          className="grid h-[50px] w-[50px] shrink-0 place-items-center rounded-2xl border border-line"
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-line"
           title={`עדיפות: ${PRIORITY_LABEL[priority]}`}
           aria-label={`עדיפות: ${PRIORITY_LABEL[priority]}`}
         >
@@ -70,7 +62,7 @@ export function TaskList({ date }: { date: ISODate }) {
           type="submit"
           aria-label="הוסף משימה"
           disabled={!title.trim()}
-          className="grid h-[50px] w-[50px] shrink-0 place-items-center rounded-2xl bg-blue-600 text-white transition hover:bg-blue-700 active:scale-95 disabled:opacity-40"
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-blue-600 text-white transition hover:bg-blue-700 active:scale-95 disabled:opacity-40"
         >
           <Plus size={22} />
         </button>

@@ -23,8 +23,8 @@ import { formatShort, todayISO } from '../lib/dates';
 import { daysSince, downloadICS, weeklyReminderICS } from '../lib/reminder';
 import { sumMeals } from '../lib/stats';
 
-function defaultMealType(): MealType {
-  const h = new Date().getHours();
+function defaultMealType(time?: string): MealType {
+  const h = time ? Number(time.slice(0, 2)) : new Date().getHours();
   if (h < 11) return 'breakfast';
   if (h < 16) return 'lunch';
   if (h < 21) return 'dinner';
@@ -221,6 +221,7 @@ export function AddMealSheet({
   const [name, setName] = useState('');
   const [plan, setPlan] = useState(initialPlan);
   const [time, setTime] = useState('');
+  const [typeTouched, setTypeTouched] = useState(false);
   const [mealType, setMealType] = useState<MealType>(defaultMealType);
   const [calories, setCalories] = useState('');
   const [protein, setProtein] = useState('');
@@ -235,6 +236,7 @@ export function AddMealSheet({
       setMealType(defaultMealType());
       setPlan(initialPlan);
       setTime('');
+      setTypeTouched(false);
     }
   }, [open, initialPlan]);
 
@@ -255,6 +257,7 @@ export function AddMealSheet({
       protein: prot,
       fixedMealId,
       planned: plan || undefined,
+      fromPlan: plan || undefined,
       time: time || undefined,
     });
     onClose();
@@ -287,7 +290,10 @@ export function AddMealSheet({
         <Segmented
           accent="sky"
           value={mealType}
-          onChange={setMealType}
+          onChange={(v) => {
+            setMealType(v);
+            setTypeTouched(true);
+          }}
           options={MEAL_TYPE_ORDER.map((t) => ({ value: t, label: MEAL_TYPE_LABELS[t] }))}
         />
         <div className="grid grid-cols-2 gap-3">
@@ -308,7 +314,17 @@ export function AddMealSheet({
           <label className="label" htmlFor="meal-time">
             שעה <span className="font-normal">(לא חובה)</span>
           </label>
-          <input id="meal-time" className="input" type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+          <input
+            id="meal-time"
+            className="input"
+            type="time"
+            value={time}
+            onChange={(e) => {
+              setTime(e.target.value);
+              // Follow the chosen time unless the meal type was picked by hand.
+              if (e.target.value && !typeTouched) setMealType(defaultMealType(e.target.value));
+            }}
+          />
         </div>
         <label className="flex cursor-pointer items-center gap-3 rounded-2xl bg-canvas p-3.5">
           <input type="checkbox" className="h-5 w-5 accent-sky-600" checked={saveAsFixed} onChange={(e) => setSaveAsFixed(e.target.checked)} />

@@ -88,6 +88,8 @@ export interface Meal {
   planned?: boolean;
   /** Optional time of day, HH:mm */
   time?: string;
+  /** Added through planning; stays on the day's checklist after it's eaten. */
+  fromPlan?: boolean;
 }
 
 /** Legacy (feature removed); table kept so old backups still import. */

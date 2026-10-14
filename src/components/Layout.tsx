@@ -1,9 +1,10 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { Apple, CalendarCheck, CalendarDays, LayoutDashboard, Settings } from 'lucide-react';
+import { Apple, CalendarCheck, CalendarDays, CalendarRange, LayoutDashboard, Settings } from 'lucide-react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 
 const NAV = [
   { to: '/', label: 'היום', icon: CalendarCheck, color: 'text-blue-600 dark:text-blue-400' },
+  { to: '/plan', label: 'תכנון', icon: CalendarRange, color: 'text-blue-600 dark:text-blue-400' },
   { to: '/calendar', label: 'לוח שנה', icon: CalendarDays, color: 'text-indigo-600 dark:text-indigo-400' },
   { to: '/nutrition', label: 'תזונה', icon: Apple, color: 'text-sky-600 dark:text-sky-400' },
   { to: '/dashboard', label: 'סיכום', icon: LayoutDashboard, color: 'text-sky-600 dark:text-sky-400' },

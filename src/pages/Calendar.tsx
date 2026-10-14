@@ -68,7 +68,7 @@ export function CalendarPage() {
 
   return (
     <>
-      <PageHeader title="לוח שנה" subtitle="לחץ על יום כדי לפתוח אותו" accent="blue" icon={<CalendarDays />} />
+      <PageHeader title="לוח שנה" subtitle="לחץ על יום כדי לתכנן אותו" accent="blue" icon={<CalendarDays />} />
 
       <Card className="p-3 sm:p-5">
         <div className="mb-3 flex items-center justify-between">
@@ -105,7 +105,7 @@ export function CalendarPage() {
                 key={d}
                 onClick={() => {
                   setSelected(d);
-                  navigate('/');
+                  navigate('/plan');
                 }}
                 disabled={!inMonth}
                 className={`relative flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-2xl transition active:scale-95 sm:min-h-[84px] ${

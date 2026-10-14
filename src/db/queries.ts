@@ -159,6 +159,7 @@ export function planFixedMeal(fm: FixedMeal, date: ISODate, time?: string) {
     protein: fm.protein,
     fixedMealId: fm.id,
     planned: true,
+    fromPlan: true,
     time,
   });
 }

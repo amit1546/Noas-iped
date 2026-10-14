@@ -6,6 +6,7 @@ import { useSettings } from './db/queries';
 import { useApplyTheme } from './lib/theme';
 import { Today } from './pages/Today';
 import { CalendarPage } from './pages/Calendar';
+import { Plan } from './pages/Plan';
 import { Nutrition } from './pages/Nutrition';
 import { SettingsPage } from './pages/Settings';
 
@@ -22,6 +23,7 @@ export default function App() {
           <Route element={<Layout />}>
             <Route index element={<Today />} />
             <Route path="*" element={<Today />} />
+            <Route path="plan" element={<Plan />} />
             <Route path="calendar" element={<CalendarPage />} />
             <Route path="nutrition" element={<Nutrition />} />
             <Route

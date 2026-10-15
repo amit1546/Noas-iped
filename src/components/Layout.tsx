@@ -12,9 +12,9 @@ const NAV = [
 export function Layout() {
   const location = useLocation();
   return (
-    <div className="min-h-dvh md:flex">
+    <div className="min-h-dvh lg:flex">
       {/* Side nav (tablet / desktop) */}
-      <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-l border-line bg-surface p-4 md:flex">
+      <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-l border-line bg-surface p-4 lg:flex">
         <div className="mb-8 flex items-center gap-2 px-2 pt-2">
           <img src="./icon.svg" alt="" className="h-9 w-9" />
           <span className="text-xl font-extrabold">היומן שלי</span>
@@ -40,7 +40,7 @@ export function Layout() {
         </nav>
       </aside>
 
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 pb-32 pt-[max(1.25rem,env(safe-area-inset-top))] md:px-8 md:pb-12 md:pt-8">
+      <main className="mx-auto w-full max-w-5xl flex-1 px-4 pb-32 pt-[max(1.25rem,env(safe-area-inset-top))] md:px-8 md:pt-8 lg:pb-12">
         {/* Enter-only animation: waiting for an exit animation (AnimatePresence mode="wait")
             could leave the screen blank on iPad until a refresh. */}
         <motion.div
@@ -54,8 +54,8 @@ export function Layout() {
       </main>
 
       {/* Bottom nav (phone) */}
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-lg md:hidden">
-        <div className="mx-auto flex max-w-lg justify-around px-1">
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-lg lg:hidden">
+        <div className="mx-auto flex max-w-2xl justify-around px-1">
           {NAV.map(({ to, label, icon: Icon, color }) => (
             <NavLink
               key={to}

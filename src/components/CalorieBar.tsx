@@ -6,21 +6,51 @@ import { ProgressBar } from './ProgressRing';
 
 const STATUS_COLOR = { under: '#2563eb', near: '#f59e0b', over: '#ef4444' } as const;
 
-/** Compact "eaten / left" calorie strip with an inline-editable daily goal. */
+/** A number you tap to edit in place (used for the daily calorie and protein goals). */
+function InlineGoal({ value, label, onSave }: { value: number; label: string; onSave: (n: number) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(String(value));
+  useEffect(() => setDraft(String(value)), [value]);
+
+  const save = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    const n = Math.round(Number(draft));
+    if (n > 0 && n !== value) onSave(n);
+    else setDraft(String(value));
+    setEditing(false);
+  };
+
+  if (!editing) {
+    return (
+      <button onClick={() => setEditing(true)} className="flex items-center gap-1 font-semibold text-ink" aria-label={`עריכת ${label}`}>
+        {value.toLocaleString('he-IL')} <Pencil size={12} className="text-muted" />
+      </button>
+    );
+  }
+  return (
+    <form onSubmit={save} className="flex items-center">
+      <input
+        type="number"
+        inputMode="numeric"
+        autoFocus
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={() => save()}
+        className="w-16 rounded-lg border border-line bg-canvas px-1.5 py-0.5 text-center font-semibold text-ink"
+        aria-label={label}
+      />
+      <button type="submit" aria-label={`שמור ${label}`} className="p-1 text-blue-600">
+        <Check size={16} />
+      </button>
+    </form>
+  );
+}
+
+/** Compact "eaten / left" calorie strip, with protein, and daily goals you can edit in place. */
 export function CalorieBar({ totals, planned = 0 }: { totals: DayTotals; planned?: number }) {
   const { calorieGoal: goal, proteinGoal } = useSettings();
   const left = goal - totals.calories;
   const color = STATUS_COLOR[calorieStatus(totals.calories, goal)];
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(String(goal));
-  useEffect(() => setDraft(String(goal)), [goal]);
-
-  const save = async (e?: React.FormEvent) => {
-    e?.preventDefault();
-    const n = Math.round(Number(draft));
-    if (n > 0) await updateSettings({ calorieGoal: n });
-    setEditing(false);
-  };
 
   return (
     <div className="card mt-5 px-4 py-3">
@@ -38,34 +68,17 @@ export function CalorieBar({ totals, planned = 0 }: { totals: DayTotals; planned
         </span>
         <span className="ms-auto flex items-center gap-1 text-muted">
           יעד
-          {editing ? (
-            <form onSubmit={save} className="flex items-center">
-              <input
-                type="number"
-                inputMode="numeric"
-                autoFocus
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                onBlur={() => save()}
-                className="w-16 rounded-lg border border-line bg-canvas px-1.5 py-0.5 text-center font-semibold text-ink"
-                aria-label="יעד קלורי יומי"
-              />
-              <button type="submit" aria-label="שמור יעד" className="p-1 text-blue-600">
-                <Check size={16} />
-              </button>
-            </form>
-          ) : (
-            <button onClick={() => setEditing(true)} className="flex items-center gap-1 font-semibold text-ink" aria-label="עריכת יעד קלורי">
-              {goal.toLocaleString('he-IL')} <Pencil size={12} className="text-muted" />
-            </button>
-          )}
+          <InlineGoal value={goal} label="יעד קלורי יומי" onSave={(n) => updateSettings({ calorieGoal: n })} />
         </span>
       </div>
       <ProgressBar value={totals.calories} max={goal} color={color} />
       <div className="mb-1 mt-2.5 flex items-center gap-2 text-sm">
         <span className="font-medium text-muted">חלבון</span>
-        <span className="ms-auto tabular-nums">
-          <b>{totals.protein}</b> <span className="text-muted">/ {proteinGoal} גר׳</span>
+        <span className="ms-auto flex items-center gap-1 tabular-nums">
+          <b>{totals.protein}</b>
+          <span className="text-muted">/</span>
+          <InlineGoal value={proteinGoal} label="יעד חלבון יומי" onSave={(n) => updateSettings({ proteinGoal: n })} />
+          <span className="text-muted">גר׳</span>
         </span>
       </div>
       <ProgressBar value={totals.protein} max={proteinGoal} color="#7c3aed" />

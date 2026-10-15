@@ -6,6 +6,8 @@ import {
   type Habit,
   type ISODate,
   type Meal,
+  type MealType,
+  type Reminder,
   type Settings,
   type Task,
 } from './schema';
@@ -97,6 +99,29 @@ export const addWorkout = (w: { title: string; date: ISODate; time?: string }) =
 export const setWorkoutDone = (id: number, done: boolean) => db.workouts.update(id, { done });
 export const deleteWorkout = (id: number) => db.workouts.delete(id);
 
+/* ---------- reminders ---------- */
+
+export const useReminders = (date: ISODate) =>
+  useLiveQuery(() => db.reminders.where('date').equals(date).toArray(), [date]) ?? [];
+
+export const useRemindersBetween = (from: ISODate, to: ISODate) =>
+  useLiveQuery(() => db.reminders.where('date').between(from, to, true, true).toArray(), [from, to]) ?? [];
+
+export const addReminder = (r: Omit<Reminder, 'id'>) => db.reminders.add(r);
+export const deleteReminder = (id: number) => db.reminders.delete(id);
+
+/* ---------- work days ---------- */
+
+/** Turns a single date into a work day or a day off, overriding the weekly pattern. */
+export async function setWorkDayOverride(date: ISODate, isWork: boolean, weeklyDefault: boolean) {
+  const current = (await db.settings.get('main')) ?? DEFAULT_SETTINGS;
+  const overrides = { ...(current.workOverrides ?? {}) };
+  // Matching the weekly pattern needs no exception.
+  if (isWork === weeklyDefault) delete overrides[date];
+  else overrides[date] = isWork;
+  await db.settings.put({ ...current, workOverrides: overrides, id: 'main' });
+}
+
 /* ---------- nutrition ---------- */
 
 export const useFixedMeals = () =>
@@ -155,10 +180,10 @@ export async function toggleFixedMealEaten(fm: FixedMeal, date: ISODate): Promis
 export const addMeal = (m: Omit<Meal, 'id'>) => db.meals.add(m);
 export const updateMeal = (id: number, patch: Partial<Meal>) => db.meals.update(id, patch);
 
-export function planFixedMeal(fm: FixedMeal, date: ISODate, time?: string) {
+export function planFixedMeal(fm: FixedMeal, date: ISODate, time?: string, mealType: MealType = fm.mealType) {
   return db.meals.add({
     date,
-    mealType: fm.mealType,
+    mealType,
     name: fm.name,
     calories: fm.calories,
     protein: fm.protein,

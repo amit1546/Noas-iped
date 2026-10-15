@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import {
   Apple,
   ArrowLeftCircle,
+  Bell,
   CalendarRange,
   Check,
   ChevronLeft,
@@ -18,6 +19,7 @@ import { useMemo, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useCelebrate } from '../components/Confetti';
 import { CalorieBar } from '../components/CalorieBar';
+import { WorkBadge } from '../components/WorkBadge';
 import { Card, CheckCircle } from '../components/ui';
 import { exportBackup, saveBackup } from '../db/backup';
 import { db } from '../db/db';
@@ -35,6 +37,7 @@ import {
   useHasData,
   useMeals,
   useOverdueTasks,
+  useReminders,
   useSettings,
   useTasks,
   useWorkoutsOn,
@@ -42,12 +45,13 @@ import {
 import { isWorkoutDone } from '../db/schema';
 import { formatLong, formatShort, greeting, todayISO } from '../lib/dates';
 import { KIND_COLORS } from '../lib/kinds';
+import { nutritionText } from '../lib/mealText';
 import { quoteOfDay } from '../lib/quotes';
 import { sumMeals } from '../lib/stats';
 import { daysSince } from '../lib/reminder';
 import { isScheduled } from '../lib/streaks';
 
-type Kind = 'task' | 'habit' | 'workout' | 'meal';
+type Kind = 'task' | 'habit' | 'workout' | 'meal' | 'reminder';
 
 interface Item {
   key: string;
@@ -57,6 +61,8 @@ interface Item {
   time?: string;
   done: boolean;
   toggle: () => Promise<unknown>;
+  /** A note to remember: nothing to check off, and it doesn't count toward "all done". */
+  note?: boolean;
 }
 
 const KIND: Record<Kind, { label: string; color: string; icon: ReactNode }> = {
@@ -64,6 +70,7 @@ const KIND: Record<Kind, { label: string; color: string; icon: ReactNode }> = {
   habit: { label: 'הרגל', color: KIND_COLORS.habit, icon: <Flame size={14} /> },
   workout: { label: 'אימון', color: KIND_COLORS.workout, icon: <Dumbbell size={14} /> },
   meal: { label: 'ארוחה', color: KIND_COLORS.meal, icon: <Apple size={14} /> },
+  reminder: { label: 'תזכורת', color: KIND_COLORS.reminder, icon: <Bell size={14} /> },
 };
 
 export function Today() {
@@ -73,6 +80,7 @@ export function Today() {
   const logs = useAllHabitLogs();
   const workouts = useWorkoutsOn(date);
   const meals = useMeals(date);
+  const reminders = useReminders(date);
   const weights = useBodyWeights();
   const celebrate = useCelebrate();
   const overdue = useOverdueTasks(date);
@@ -127,22 +135,32 @@ export function Today() {
           key: `m${m.id}`,
           kind: 'meal' as const,
           title: m.name,
-          sub: `${m.calories} קל׳`,
+          sub: nutritionText(m) || undefined,
           time: m.time,
           done: !m.planned,
           toggle: () => updateMeal(m.id!, { planned: !m.planned }),
         })),
+      ...reminders.map((r) => ({
+        key: `r${r.id}`,
+        kind: 'reminder' as const,
+        title: r.text,
+        time: r.time,
+        done: false,
+        note: true,
+        toggle: async () => {},
+      })),
     ];
     return list.sort((a, b) => (a.time ?? '99:99').localeCompare(b.time ?? '99:99'));
-  }, [tasks, habits, logs, workouts, meals, date]);
+  }, [tasks, habits, logs, workouts, meals, reminders, date]);
 
-  const doneCount = items.filter((i) => i.done).length;
+  const checkable = items.filter((i) => !i.note);
+  const doneCount = checkable.filter((i) => i.done).length;
   const timed = items.filter((i) => i.time);
   const untimed = items.filter((i) => !i.time);
 
   const onToggle = async (item: Item) => {
     await item.toggle();
-    if (!item.done && doneCount + 1 === items.length) celebrate('סיימת את כל מה שתכננת להיום! 🎉');
+    if (!item.done && doneCount + 1 === checkable.length) celebrate('סיימת את כל מה שתכננת להיום! 🎉');
   };
 
   return (
@@ -150,8 +168,9 @@ export function Today() {
       <header className="mb-5 flex items-start justify-between gap-3">
         <div>
           <h1 className="text-3xl font-extrabold">{greeting()} 👋</h1>
-          <p className="mt-1 text-sm text-muted">
+          <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted">
             {formatLong(date)}
+            <WorkBadge date={date} />
           </p>
           <p className="mt-1 flex items-center gap-1.5 text-muted">
             <Sparkles size={16} className="shrink-0 text-amber-500" />
@@ -161,7 +180,7 @@ export function Today() {
         <Link
           to="/settings"
           aria-label="הגדרות"
-          className="grid h-11 w-11 shrink-0 place-items-center rounded-xl text-muted hover:bg-line/60 md:hidden"
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-xl text-muted hover:bg-line/60 lg:hidden"
         >
           <Settings size={22} />
         </Link>
@@ -284,6 +303,24 @@ function Section({ title, items, onToggle }: { title: string; items: Item[]; onT
           const k = KIND[item.kind];
           return (
             <motion.li key={item.key} layout>
+              {item.note ? (
+                <div
+                  className="flex min-h-[60px] w-full items-center gap-3 rounded-2xl border-2 border-s-[6px] px-3"
+                  style={{ borderColor: `${k.color}30`, borderInlineStartColor: k.color, background: `${k.color}0d` }}
+                >
+                  <Bell size={22} className="shrink-0" style={{ color: k.color }} />
+                  {item.time && (
+                    <span className="w-12 shrink-0 text-sm font-bold tabular-nums" style={{ color: k.color }}>
+                      {item.time}
+                    </span>
+                  )}
+                  <span className="flex-1 font-semibold">{item.title}</span>
+                  <span className="flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold text-white" style={{ background: k.color }}>
+                    {k.icon}
+                    {k.label}
+                  </span>
+                </div>
+              ) : (
               <button
                 onClick={() => onToggle(item)}
                 className="flex min-h-[60px] w-full items-center gap-3 rounded-2xl border-2 border-s-[6px] px-3 text-start transition active:scale-[0.99]"
@@ -309,6 +346,7 @@ function Section({ title, items, onToggle }: { title: string; items: Item[]; onT
                   {k.label}
                 </span>
               </button>
+              )}
             </motion.li>
           );
         })}

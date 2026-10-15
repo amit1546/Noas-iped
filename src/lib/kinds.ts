@@ -4,6 +4,7 @@ export const KIND_COLORS = {
   habit: '#059669',
   workout: '#ea580c',
   meal: '#db2777',
+  reminder: '#0891b2',
 } as const;
 
 export const OVER_GOAL_COLOR = '#ef4444';

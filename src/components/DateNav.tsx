@@ -2,6 +2,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
 import { fromISO, shiftISO, todayISO } from '../lib/dates';
+import { WorkBadge } from './WorkBadge';
 import type { ISODate } from '../db/schema';
 
 export function DateNav({ date, onChange }: { date: ISODate; onChange: (d: ISODate) => void }) {
@@ -23,6 +24,7 @@ export function DateNav({ date, onChange }: { date: ISODate; onChange: (d: ISODa
         <span className="mt-0.5 text-xl font-bold text-blue-600 dark:text-blue-400">
           {format(fromISO(date), 'd בMMMM yyyy', { locale: he })}
         </span>
+        <WorkBadge date={date} className="mt-1.5" />
         <input
           type="date"
           value={date}

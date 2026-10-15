@@ -50,7 +50,7 @@ export function AddMealSheet({
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || calories === '') return;
+    if (!name.trim()) return;
     const cal = Math.round(Number(calories) || 0);
     const prot = Math.round(Number(protein) || 0);
     let fixedMealId: number | undefined;
@@ -107,13 +107,13 @@ export function AddMealSheet({
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="label" htmlFor="meal-cal">
-              קלוריות
+              קלוריות <span className="font-normal">(לא חובה)</span>
             </label>
             <input id="meal-cal" className="input" type="number" inputMode="numeric" value={calories} onChange={(e) => setCalories(e.target.value)} />
           </div>
           <div>
             <label className="label" htmlFor="meal-protein">
-              חלבון (גר׳)
+              חלבון (גר׳) <span className="font-normal">(לא חובה)</span>
             </label>
             <input id="meal-protein" className="input" type="number" inputMode="numeric" value={protein} onChange={(e) => setProtein(e.target.value)} />
           </div>
@@ -148,7 +148,7 @@ export function AddMealSheet({
           <input type="checkbox" className="h-5 w-5 accent-sky-600" checked={saveAsFixed} onChange={(e) => setSaveAsFixed(e.target.checked)} />
           <span className="font-medium">שמור גם כארוחה קבועה</span>
         </label>
-        <Button accent="sky" type="submit" className="w-full" disabled={!name.trim() || calories === ''}>
+        <Button accent="sky" type="submit" className="w-full" disabled={!name.trim()}>
           {plan ? 'הוסף לתכנון' : 'הוספה'}
         </Button>
       </form>

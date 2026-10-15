@@ -6,6 +6,10 @@ describe('stats', () => {
     expect(sumMeals([{ calories: 400, protein: 30 }, { calories: 250, protein: 0 }])).toEqual({ calories: 650, protein: 30 });
   });
 
+  it('counts meals with no calories or protein as zero', () => {
+    expect(sumMeals([{ calories: 0, protein: 0 }, { calories: 300, protein: 20 }])).toEqual({ calories: 300, protein: 20 });
+  });
+
   it('ignores planned meals', () => {
     expect(sumMeals([{ calories: 400, protein: 30 }, { calories: 900, protein: 40, planned: true }])).toEqual({
       calories: 400,

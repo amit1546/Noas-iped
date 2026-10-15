@@ -69,7 +69,10 @@ export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 export interface FixedMeal {
   id?: number;
   name: string;
+  /** Primary type (kept for older saved data) */
   mealType: MealType;
+  /** All the times of day this meal fits, e.g. lunch and dinner */
+  mealTypes?: MealType[];
   calories: number;
   protein: number;
   active: boolean;
@@ -92,6 +95,14 @@ export interface Meal {
   fromPlan?: boolean;
 }
 
+export interface Reminder {
+  id?: number;
+  date: ISODate;
+  text: string;
+  /** Optional time of day, HH:mm */
+  time?: string;
+}
+
 /** Legacy (feature removed); table kept so old backups still import. */
 export interface WaterLog {
   date: ISODate;
@@ -112,6 +123,10 @@ export interface Settings {
   theme: ThemePref;
   /** Date of the last backup export */
   lastBackupAt?: ISODate;
+  /** Weekdays that are work days by default (0 = Sunday) */
+  workDays: Weekday[];
+  /** Per-date exceptions to workDays */
+  workOverrides?: Record<ISODate, boolean>;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -119,6 +134,7 @@ export const DEFAULT_SETTINGS: Settings = {
   calorieGoal: 2000,
   proteinGoal: 120,
   theme: 'system',
+  workDays: [0, 1, 2, 3, 4],
 };
 
 export const MEAL_TYPE_LABELS: Record<MealType, string> = {
@@ -129,3 +145,7 @@ export const MEAL_TYPE_LABELS: Record<MealType, string> = {
 };
 
 export const MEAL_TYPE_ORDER: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
+
+/** The meal types a fixed meal can be planned for (older meals only have one). */
+export const fixedMealTypes = (fm: Pick<FixedMeal, 'mealType' | 'mealTypes'>): MealType[] =>
+  fm.mealTypes?.length ? MEAL_TYPE_ORDER.filter((t) => fm.mealTypes!.includes(t)) : [fm.mealType];

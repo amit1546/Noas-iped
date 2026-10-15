@@ -38,6 +38,43 @@ export function weeklyReminderICS(opts: { title: string; weekday: number; hour: 
   ].join('\r\n');
 }
 
+const pad = (n: number) => String(n).padStart(2, '0');
+const icsEscape = (t: string) => t.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+
+/**
+ * A one-time calendar event with an alert, for a single reminder. Opening the file
+ * adds it to the phone's calendar. Without a time it is set for 09:00.
+ */
+export function oneOffReminderICS(opts: { title: string; date: string; time?: string }) {
+  const [y, mo, d] = opts.date.split('-').map(Number);
+  const [h, mi] = (opts.time || '09:00').split(':').map(Number);
+  const start = new Date(y, mo - 1, d, h, mi, 0);
+  const end = new Date(start.getTime() + 15 * 60 * 1000);
+  const fmt = (x: Date) =>
+    `${x.getFullYear()}${pad(x.getMonth() + 1)}${pad(x.getDate())}T${pad(x.getHours())}${pad(x.getMinutes())}00`;
+  const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '');
+  const title = icsEscape(opts.title);
+  return [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//noas-journal//HE',
+    'CALSCALE:GREGORIAN',
+    'BEGIN:VEVENT',
+    `UID:reminder-${stamp}-${Math.random().toString(36).slice(2, 8)}@noas-journal`,
+    `DTSTAMP:${stamp}`,
+    `DTSTART:${fmt(start)}`,
+    `DTEND:${fmt(end)}`,
+    `SUMMARY:🔔 ${title}`,
+    'BEGIN:VALARM',
+    'ACTION:DISPLAY',
+    `DESCRIPTION:${title}`,
+    'TRIGGER:PT0M',
+    'END:VALARM',
+    'END:VEVENT',
+    'END:VCALENDAR',
+  ].join('\r\n');
+}
+
 export function downloadICS(text: string, filename: string) {
   const blob = new Blob([text], { type: 'text/calendar;charset=utf-8' });
   const url = URL.createObjectURL(blob);

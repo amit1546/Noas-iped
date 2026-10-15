@@ -5,6 +5,7 @@ import type {
   Habit,
   HabitLog,
   Meal,
+  Reminder,
   Settings,
   Task,
   WaterLog,
@@ -18,6 +19,7 @@ export class JournalDB extends Dexie {
   workouts!: Table<Workout, number>;
   fixedMeals!: Table<FixedMeal, number>;
   meals!: Table<Meal, number>;
+  reminders!: Table<Reminder, number>;
   waterLogs!: Table<WaterLog, string>;
   bodyWeight!: Table<BodyWeight, string>;
   settings!: Table<Settings, string>;
@@ -35,6 +37,8 @@ export class JournalDB extends Dexie {
       bodyWeight: 'date',
       settings: 'id',
     });
+    // v2: reminders (notes tied to a date, not tasks)
+    this.version(2).stores({ reminders: '++id, date' });
   }
 }
 
@@ -47,6 +51,7 @@ export const TABLE_NAMES = [
   'workouts',
   'fixedMeals',
   'meals',
+  'reminders',
   'waterLogs',
   'bodyWeight',
   'settings',

@@ -1,4 +1,4 @@
-import { CalendarClock, CalendarRange, Check, Dumbbell, Flame, ListChecks, Pencil, Plus, Settings2 } from 'lucide-react';
+import { Bell, CalendarClock, CalendarRange, Check, Dumbbell, Flame, ListChecks, Pencil, Plus, Settings2 } from 'lucide-react';
 import { useState } from 'react';
 import { AddMealSheet } from '../components/AddMealSheet';
 import { DateNav } from '../components/DateNav';
@@ -6,11 +6,12 @@ import { FixedMealsManager } from '../components/FixedMealsManager';
 import { HabitChecklist } from '../components/HabitChecklist';
 import { HabitForm } from '../components/HabitForm';
 import { PlannedMeals } from '../components/PlannedMeals';
+import { ReminderList } from '../components/ReminderList';
 import { TaskList } from '../components/TaskList';
 import { WorkoutList } from '../components/WorkoutList';
 import { Card, CardTitle, PageHeader } from '../components/ui';
 import { planFixedMeal, useFixedMeals, useMeals, useSettings } from '../db/queries';
-import type { Habit } from '../db/schema';
+import { fixedMealTypes, MEAL_TYPE_LABELS, type Habit } from '../db/schema';
 import { useSelectedDate } from '../lib/selectedDate';
 import { sumMeals } from '../lib/stats';
 
@@ -45,6 +46,11 @@ export function Plan() {
         </Card>
 
         <Card>
+          <CardTitle title="תזכורות" accent="blue" icon={<Bell size={18} />} />
+          <ReminderList date={date} />
+        </Card>
+
+        <Card>
           <CardTitle
             title="ארוחות"
             accent="sky"
@@ -72,17 +78,22 @@ export function Plan() {
             <div className="mb-3">
               <p className="mb-1.5 text-xs font-medium text-muted">הוספה מהירה מהארוחות הקבועות:</p>
               <div className="flex flex-wrap gap-1.5">
-                {fixedMeals.map((fm) => (
-                  <button
-                    key={fm.id}
-                    onClick={() => planFixedMeal(fm, date)}
-                    className="chip text-ink hover:border-sky-400"
-                    aria-label={`תכנן ${fm.name}`}
-                  >
-                    <Plus size={14} className="text-sky-600" /> {fm.name}
-                    <span className="text-xs text-muted">{fm.calories}</span>
-                  </button>
-                ))}
+                {fixedMeals.flatMap((fm) => {
+                  const types = fixedMealTypes(fm);
+                  // A meal that fits several times of day gets one chip per time of day.
+                  return types.map((t) => (
+                    <button
+                      key={`${fm.id}-${t}`}
+                      onClick={() => planFixedMeal(fm, date, undefined, t)}
+                      className="chip text-ink hover:border-sky-400"
+                      aria-label={types.length > 1 ? `תכנן ${fm.name} ל${MEAL_TYPE_LABELS[t]}` : `תכנן ${fm.name}`}
+                    >
+                      <Plus size={14} className="text-sky-600" /> {fm.name}
+                      {types.length > 1 && <span className="text-xs font-semibold text-sky-700 dark:text-sky-300">· {MEAL_TYPE_LABELS[t]}</span>}
+                      {fm.calories > 0 && <span className="text-xs text-muted">{fm.calories}</span>}
+                    </button>
+                  ));
+                })}
               </div>
             </div>
           )}

@@ -1,11 +1,12 @@
 import { ChevronDown, ChevronUp, Pencil, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { deleteFixedMeal, moveFixedMeal, saveFixedMeal, useFixedMeals } from '../db/queries';
-import { MEAL_TYPE_LABELS, MEAL_TYPE_ORDER, type FixedMeal, type MealType } from '../db/schema';
+import { fixedMealTypes, MEAL_TYPE_LABELS, MEAL_TYPE_ORDER, type FixedMeal, type MealType } from '../db/schema';
+import { nutritionText } from '../lib/mealText';
 import { BottomSheet } from './BottomSheet';
-import { Button, EmptyState, IconButton, Segmented } from './ui';
+import { Button, EmptyState, IconButton } from './ui';
 
-const EMPTY = { name: '', mealType: 'breakfast' as MealType, calories: '', protein: '' };
+const EMPTY = { name: '', mealTypes: ['breakfast'] as MealType[], calories: '', protein: '' };
 
 export function FixedMealsManager({ open, onClose }: { open: boolean; onClose: () => void }) {
   const fixedMeals = useFixedMeals();
@@ -14,7 +15,7 @@ export function FixedMealsManager({ open, onClose }: { open: boolean; onClose: (
 
   const startEdit = (m: FixedMeal) => {
     setEditingId(m.id);
-    setForm({ name: m.name, mealType: m.mealType, calories: String(m.calories), protein: String(m.protein || '') });
+    setForm({ name: m.name, mealTypes: fixedMealTypes(m), calories: String(m.calories || ''), protein: String(m.protein || '') });
   };
 
   const reset = () => {
@@ -24,12 +25,13 @@ export function FixedMealsManager({ open, onClose }: { open: boolean; onClose: (
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name.trim() || !(Number(form.calories) >= 0)) return;
+    if (!form.name.trim() || !form.mealTypes.length) return;
     const existing = fixedMeals.find((m) => m.id === editingId);
     await saveFixedMeal({
       id: editingId,
       name: form.name.trim(),
-      mealType: form.mealType,
+      mealType: form.mealTypes[0],
+      mealTypes: form.mealTypes,
       calories: Math.round(Number(form.calories) || 0),
       protein: Math.round(Number(form.protein) || 0),
       active: existing?.active ?? true,
@@ -55,18 +57,38 @@ export function FixedMealsManager({ open, onClose }: { open: boolean; onClose: (
           onChange={(e) => setForm({ ...form, name: e.target.value })}
           aria-label="שם הארוחה"
         />
-        <Segmented
-          accent="sky"
-          value={form.mealType}
-          onChange={(v) => setForm({ ...form, mealType: v })}
-          options={MEAL_TYPE_ORDER.map((t) => ({ value: t, label: MEAL_TYPE_LABELS[t] }))}
-        />
+        <div>
+          <p className="mb-1.5 text-sm font-medium text-muted">מתאימה ל: (אפשר לבחור כמה)</p>
+          <div className="flex flex-wrap gap-2">
+            {MEAL_TYPE_ORDER.map((t) => {
+              const on = form.mealTypes.includes(t);
+              return (
+                <button
+                  type="button"
+                  key={t}
+                  aria-pressed={on}
+                  onClick={() =>
+                    setForm({
+                      ...form,
+                      // At least one type always stays selected.
+                      mealTypes: on ? (form.mealTypes.length > 1 ? form.mealTypes.filter((x) => x !== t) : form.mealTypes) : [...form.mealTypes, t],
+                    })
+                  }
+                  className={`chip ${on ? 'border-transparent bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300' : 'text-muted hover:text-ink'}`}
+                >
+                  {on && '✓ '}
+                  {MEAL_TYPE_LABELS[t]}
+                </button>
+              );
+            })}
+          </div>
+        </div>
         <div className="grid grid-cols-2 gap-2">
           <input
             className="input bg-surface"
             type="number"
             inputMode="numeric"
-            placeholder="קלוריות"
+            placeholder="קלוריות (לא חובה)"
             value={form.calories}
             onChange={(e) => setForm({ ...form, calories: e.target.value })}
             aria-label="קלוריות"
@@ -75,14 +97,14 @@ export function FixedMealsManager({ open, onClose }: { open: boolean; onClose: (
             className="input bg-surface"
             type="number"
             inputMode="numeric"
-            placeholder="חלבון (גר׳)"
+            placeholder="חלבון (לא חובה)"
             value={form.protein}
             onChange={(e) => setForm({ ...form, protein: e.target.value })}
             aria-label="חלבון"
           />
         </div>
         <div className="flex gap-2">
-          <Button accent="sky" type="submit" className="flex-1" disabled={!form.name.trim() || form.calories === ''}>
+          <Button accent="sky" type="submit" className="flex-1" disabled={!form.name.trim()}>
             {editingId ? 'שמירה' : 'הוספה'}
           </Button>
           {editingId && (
@@ -102,7 +124,7 @@ export function FixedMealsManager({ open, onClose }: { open: boolean; onClose: (
               <div className="flex-1">
                 <p className="font-semibold">{m.name}</p>
                 <p className="text-xs text-muted">
-                  {MEAL_TYPE_LABELS[m.mealType]} · {m.calories} קל׳{m.protein ? ` · ${m.protein} גר׳ חלבון` : ''}
+                  {[fixedMealTypes(m).map((t) => MEAL_TYPE_LABELS[t]).join(' / '), nutritionText(m, true)].filter(Boolean).join(' · ')}
                 </p>
               </div>
               <label className="flex cursor-pointer items-center gap-1 px-1 text-xs text-muted">

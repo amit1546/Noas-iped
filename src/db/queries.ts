@@ -1,4 +1,5 @@
 import { useLiveQuery } from 'dexie-react-hooks';
+import { mergeGroup } from '../lib/fixedMeals';
 import { db } from './db';
 import {
   DEFAULT_SETTINGS,
@@ -143,6 +144,18 @@ export async function saveFixedMeal(m: Omit<FixedMeal, 'id' | 'order'> & { id?: 
 }
 
 export const deleteFixedMeal = (id: number) => db.fixedMeals.delete(id);
+
+/** Folds fixed meals that share a name into one that fits all their times of day. */
+export async function mergeFixedMeals(group: FixedMeal[]) {
+  if (group.length < 2) return;
+  const merged = mergeGroup(group);
+  const removeIds = group.map((m) => m.id!).filter((id) => id !== merged.id);
+  await db.transaction('rw', db.fixedMeals, db.meals, async () => {
+    await db.fixedMeals.put(merged);
+    await db.meals.where('fixedMealId').anyOf(removeIds).modify({ fixedMealId: merged.id });
+    await db.fixedMeals.bulkDelete(removeIds);
+  });
+}
 
 export async function moveFixedMeal(id: number, dir: -1 | 1) {
   const all = await db.fixedMeals.orderBy('order').toArray();

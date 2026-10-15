@@ -16,23 +16,26 @@ export function DateNav({ date, onChange }: { date: ISODate; onChange: (d: ISODa
       >
         <ChevronRight size={28} />
       </button>
-      <label className="relative flex flex-1 cursor-pointer flex-col items-center py-1">
-        <span className="flex items-center gap-2 text-3xl font-extrabold leading-tight">
-          {format(fromISO(date), 'EEEE', { locale: he })}
-          {isToday && <span className="rounded-full bg-blue-600 px-2.5 py-0.5 text-sm font-bold text-white">היום</span>}
-        </span>
-        <span className="mt-0.5 text-xl font-bold text-blue-600 dark:text-blue-400">
-          {format(fromISO(date), 'd בMMMM yyyy', { locale: he })}
-        </span>
-        <WorkBadge date={date} className="mt-1.5" />
-        <input
-          type="date"
-          value={date}
-          onChange={(e) => e.target.value && onChange(e.target.value)}
-          className="absolute inset-0 cursor-pointer opacity-0"
-          aria-label="בחירת תאריך"
-        />
-      </label>
+      <div className="flex flex-1 flex-col items-center py-1">
+        {/* The invisible date picker covers only the date text, never the work-day button below it. */}
+        <label className="relative flex cursor-pointer flex-col items-center">
+          <span className="flex items-center gap-2 text-3xl font-extrabold leading-tight">
+            {format(fromISO(date), 'EEEE', { locale: he })}
+            {isToday && <span className="rounded-full bg-blue-600 px-2.5 py-0.5 text-sm font-bold text-white">היום</span>}
+          </span>
+          <span className="mt-0.5 text-xl font-bold text-blue-600 dark:text-blue-400">
+            {format(fromISO(date), 'd בMMMM yyyy', { locale: he })}
+          </span>
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => e.target.value && onChange(e.target.value)}
+            className="absolute inset-0 cursor-pointer opacity-0"
+            aria-label="בחירת תאריך"
+          />
+        </label>
+        <WorkBadge date={date} interactive className="mt-2" />
+      </div>
       <button
         aria-label="יום הבא"
         onClick={() => onChange(shiftISO(date, 1))}

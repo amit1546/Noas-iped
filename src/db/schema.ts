@@ -134,7 +134,8 @@ export const DEFAULT_SETTINGS: Settings = {
   calorieGoal: 2000,
   proteinGoal: 120,
   theme: 'system',
-  workDays: [0, 1, 2, 3, 4],
+  // Most people's work days aren't a fixed weekly pattern, so start with none and let them mark dates.
+  workDays: [],
 };
 
 export const MEAL_TYPE_LABELS: Record<MealType, string> = {

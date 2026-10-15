@@ -1,4 +1,4 @@
-import { Bell, CalendarClock, CalendarRange, Check, Dumbbell, Flame, ListChecks, Pencil, Plus, Settings2 } from 'lucide-react';
+import { Bell, CalendarClock, CalendarRange, Check, ChevronDown, Dumbbell, Flame, ListChecks, Pencil, Plus, Settings2, X } from 'lucide-react';
 import { useState } from 'react';
 import { AddMealSheet } from '../components/AddMealSheet';
 import { DateNav } from '../components/DateNav';
@@ -11,7 +11,7 @@ import { TaskList } from '../components/TaskList';
 import { WorkoutList } from '../components/WorkoutList';
 import { Card, CardTitle, PageHeader } from '../components/ui';
 import { planFixedMeal, useFixedMeals, useMeals, useSettings } from '../db/queries';
-import { fixedMealTypes, MEAL_TYPE_LABELS, type Habit } from '../db/schema';
+import { fixedMealTypes, MEAL_TYPE_LABELS, type FixedMeal, type Habit } from '../db/schema';
 import { useSelectedDate } from '../lib/selectedDate';
 import { sumMeals } from '../lib/stats';
 
@@ -25,6 +25,7 @@ export function Plan() {
   const [habitForm, setHabitForm] = useState<{ open: boolean; habit?: Habit; name?: string }>({ open: false });
   const [planningMeal, setPlanningMeal] = useState(false);
   const [manageMeals, setManageMeals] = useState(false);
+  const [picking, setPicking] = useState<FixedMeal | null>(null);
 
   const plannedCalories = meals.filter((m) => m.planned).reduce((a, m) => a + m.calories, 0);
   const dayCalories = sumMeals(meals).calories + plannedCalories;
@@ -78,23 +79,45 @@ export function Plan() {
             <div className="mb-3">
               <p className="mb-1.5 text-xs font-medium text-muted">הוספה מהירה מהארוחות הקבועות:</p>
               <div className="flex flex-wrap gap-1.5">
-                {fixedMeals.flatMap((fm) => {
+                {fixedMeals.map((fm) => {
                   const types = fixedMealTypes(fm);
-                  // A meal that fits several times of day gets one chip per time of day.
-                  return types.map((t) => (
+                  const several = types.length > 1;
+                  return (
                     <button
-                      key={`${fm.id}-${t}`}
-                      onClick={() => planFixedMeal(fm, date, undefined, t)}
-                      className="chip text-ink hover:border-sky-400"
-                      aria-label={types.length > 1 ? `תכנן ${fm.name} ל${MEAL_TYPE_LABELS[t]}` : `תכנן ${fm.name}`}
+                      key={fm.id}
+                      onClick={() => (several ? setPicking(picking?.id === fm.id ? null : fm) : planFixedMeal(fm, date))}
+                      className={`chip text-ink hover:border-sky-400 ${picking?.id === fm.id ? 'border-sky-500 bg-sky-50 dark:bg-sky-500/10' : ''}`}
+                      aria-label={`תכנן ${fm.name}`}
+                      aria-expanded={several ? picking?.id === fm.id : undefined}
                     >
                       <Plus size={14} className="text-sky-600" /> {fm.name}
-                      {types.length > 1 && <span className="text-xs font-semibold text-sky-700 dark:text-sky-300">· {MEAL_TYPE_LABELS[t]}</span>}
+                      {several && <ChevronDown size={14} className="text-muted" />}
                       {fm.calories > 0 && <span className="text-xs text-muted">{fm.calories}</span>}
                     </button>
-                  ));
+                  );
                 })}
               </div>
+              {picking && (
+                <div className="mt-2 flex flex-wrap items-center gap-2 rounded-2xl bg-sky-50 p-3 dark:bg-sky-500/10">
+                  <span className="font-semibold">{picking.name} — לאיזה זמן?</span>
+                  {fixedMealTypes(picking).map((t) => (
+                    <button
+                      key={t}
+                      aria-label={`${picking.name} ל${MEAL_TYPE_LABELS[t]}`}
+                      onClick={() => {
+                        planFixedMeal(picking, date, undefined, t);
+                        setPicking(null);
+                      }}
+                      className="chip border-sky-300 bg-surface font-semibold text-sky-700 dark:text-sky-300"
+                    >
+                      {MEAL_TYPE_LABELS[t]}
+                    </button>
+                  ))}
+                  <button aria-label="ביטול" onClick={() => setPicking(null)} className="ms-auto p-1 text-muted hover:text-ink">
+                    <X size={18} />
+                  </button>
+                </div>
+              )}
             </div>
           )}
           <PlannedMeals meals={meals} hint={false} />

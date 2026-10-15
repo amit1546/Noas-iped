@@ -49,6 +49,7 @@ export function CalendarPage() {
   const [selected, setSelected] = useSelectedDate();
   const [month, setMonth] = useState(() => startOfMonth(fromISO(selected)));
   const [openDay, setOpenDay] = useState<ISODate | null>(null);
+  const [marking, setMarking] = useState(false);
   const settings = useSettings();
   const today = todayISO();
 
@@ -95,11 +96,24 @@ export function CalendarPage() {
       <PageHeader title="לוח שנה" subtitle="לחץ על יום כדי לראות מה יש בו" accent="blue" icon={<CalendarDays />} />
 
       <Card className="mb-4 p-4">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-          <span className="flex items-center gap-1.5 font-semibold">
-            <Briefcase size={18} /> ימי עבודה
-          </span>
-          <div className="flex gap-1.5" role="group" aria-label="ימי עבודה קבועים בשבוע">
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            onClick={() => setMarking((m) => !m)}
+            aria-pressed={marking}
+            className={`btn px-5 ${marking ? 'bg-slate-700 text-white dark:bg-slate-200 dark:text-slate-900' : 'bg-canvas text-ink hover:bg-line/60'}`}
+          >
+            {marking ? <Check size={18} /> : <Briefcase size={18} />}
+            {marking ? 'סיום סימון' : 'סימון ימי עבודה'}
+          </button>
+          <p className="min-w-0 flex-1 text-sm text-muted">
+            {marking ? 'לחץ על כל יום שיש בו עבודה, ולחיצה נוספת מבטלת' : 'מסמנים תאריכים מסוימים, בלי חוקים קבועים'}
+          </p>
+        </div>
+        <details className="group mt-3">
+          <summary className="cursor-pointer text-sm font-medium text-muted marker:content-none hover:text-ink">
+            ימים קבועים בשבוע (לא חובה) ▾
+          </summary>
+          <div className="mt-2 flex gap-1.5" role="group" aria-label="ימי עבודה קבועים בשבוע">
             {WEEKDAYS.map((label, i) => {
               const on = settings.workDays.includes(i as Weekday);
               return (
@@ -107,7 +121,7 @@ export function CalendarPage() {
                   key={label}
                   onClick={() => toggleWeekday(i as Weekday)}
                   aria-pressed={on}
-                  aria-label={`יום ${label} ${on ? 'הוא יום עבודה' : 'אינו יום עבודה'}`}
+                  aria-label={`יום ${label} ${on ? 'הוא יום עבודה קבוע' : 'אינו יום עבודה קבוע'}`}
                   className={`h-11 w-11 rounded-xl font-bold transition active:scale-95 ${
                     on ? 'bg-slate-700 text-white dark:bg-slate-200 dark:text-slate-900' : 'bg-canvas text-muted'
                   }`}
@@ -117,7 +131,7 @@ export function CalendarPage() {
               );
             })}
           </div>
-        </div>
+        </details>
       </Card>
 
       <Card className="p-3 sm:p-5">
@@ -155,16 +169,24 @@ export function CalendarPage() {
               <button
                 key={d}
                 onClick={() => {
+                  if (marking) {
+                    // Marking mode: one tap turns this exact date into a work day (or back).
+                    setWorkDayOverride(d, !work, isWeeklyWorkDay(d, settings));
+                    return;
+                  }
                   setSelected(d);
                   setOpenDay(d);
                 }}
+                aria-pressed={marking ? work : undefined}
                 disabled={!inMonth}
                 aria-label={inMonth ? `${formatLong(d)}${work ? ', יום עבודה' : ''}` : undefined}
                 style={{ minHeight: 'clamp(64px, 10vh, 140px)' }}
                 className={`relative flex flex-col items-center justify-center gap-1.5 rounded-2xl transition active:scale-95 ${
                   !inMonth
                     ? 'invisible'
-                    : isToday
+                    : marking
+                      ? `${work ? 'bg-slate-700 text-white dark:bg-slate-200 dark:text-slate-900' : 'bg-canvas ring-1 ring-line'} ${isToday ? 'ring-[3px] ring-blue-600' : ''}`
+                      : isToday
                       ? 'bg-blue-50 text-blue-700 ring-[3px] ring-blue-600 dark:bg-blue-500/15 dark:text-blue-200'
                       : isSel
                         ? 'bg-blue-50 ring-2 ring-blue-400 dark:bg-blue-500/10'
@@ -173,8 +195,14 @@ export function CalendarPage() {
                           : 'bg-canvas'
                 }`}
               >
-                {inMonth && work && <Briefcase size={13} className="absolute start-2 top-2 text-slate-500 dark:text-slate-300" aria-hidden />}
-                <span className={`text-xl font-bold tabular-nums sm:text-2xl ${d > today && !isToday ? 'text-muted' : ''}`}>
+                {inMonth && work && (
+                  <Briefcase size={13} className={`absolute start-2 top-2 ${marking ? '' : 'text-slate-500 dark:text-slate-300'}`} aria-hidden />
+                )}
+                <span
+                  className={`text-xl font-bold tabular-nums sm:text-2xl ${
+                    marking && work ? '' : d > today && !isToday ? 'text-muted' : ''
+                  }`}
+                >
                   {fromISO(d).getDate()}
                 </span>
                 <span className="flex h-3 items-center gap-1">{s && <Dots s={s} />}</span>

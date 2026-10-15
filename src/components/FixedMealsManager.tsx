@@ -1,7 +1,8 @@
 import { ChevronDown, ChevronUp, Pencil, Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import { deleteFixedMeal, moveFixedMeal, saveFixedMeal, useFixedMeals } from '../db/queries';
+import { deleteFixedMeal, mergeFixedMeals, moveFixedMeal, saveFixedMeal, useFixedMeals } from '../db/queries';
 import { fixedMealTypes, MEAL_TYPE_LABELS, MEAL_TYPE_ORDER, type FixedMeal, type MealType } from '../db/schema';
+import { duplicateGroups, mergeGroup } from '../lib/fixedMeals';
 import { nutritionText } from '../lib/mealText';
 import { BottomSheet } from './BottomSheet';
 import { Button, EmptyState, IconButton } from './ui';
@@ -12,6 +13,7 @@ export function FixedMealsManager({ open, onClose }: { open: boolean; onClose: (
   const fixedMeals = useFixedMeals();
   const [form, setForm] = useState(EMPTY);
   const [editingId, setEditingId] = useState<number | undefined>();
+  const duplicates = duplicateGroups(fixedMeals);
 
   const startEdit = (m: FixedMeal) => {
     setEditingId(m.id);
@@ -48,6 +50,23 @@ export function FixedMealsManager({ open, onClose }: { open: boolean; onClose: (
       }}
       title="ניהול ארוחות קבועות"
     >
+      {duplicates.map((group) => {
+        const types = fixedMealTypes(mergeGroup(group)).map((t) => MEAL_TYPE_LABELS[t]).join(' / ');
+        return (
+          <div key={group[0].id} className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl bg-amber-50 p-3 text-amber-900 dark:bg-amber-500/10 dark:text-amber-200">
+            <p className="min-w-0 flex-1 text-sm font-medium">
+              יש {group.length} ארוחות קבועות בשם "{group[0].name}". אפשר לאחד לארוחה אחת שמתאימה ל{types}.
+            </p>
+            <button
+              onClick={() => mergeFixedMeals(group)}
+              className="min-h-[40px] rounded-xl bg-amber-600 px-4 text-sm font-bold text-white active:scale-95"
+            >
+              אחד לארוחה אחת
+            </button>
+          </div>
+        );
+      })}
+
       <form onSubmit={submit} className="mb-5 space-y-3 rounded-3xl bg-canvas p-4">
         <p className="font-semibold">{editingId ? 'עריכת ארוחה' : 'ארוחה קבועה חדשה'}</p>
         <input

@@ -2,10 +2,16 @@ import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { deleteHabit, toggleHabit, useAllHabitLogs, useHabits } from '../db/queries';
 import type { Habit, ISODate } from '../db/schema';
+import { describeDays } from '../lib/habitText';
 import { currentStreak, isScheduled } from '../lib/streaks';
 import { useCelebrate } from './Confetti';
 import { CheckCircle, IconButton } from './ui';
 
+/**
+ * Every habit with its schedule (days and time) written on it, so you never have to
+ * flip through days to find out when one is due. Habits that aren't due on the chosen
+ * day are dimmed and can't be checked.
+ */
 export function HabitChecklist({
   date,
   editing,
@@ -33,13 +39,15 @@ export function HabitChecklist({
   }, [logs]);
 
   const byTime = (a: Habit, b: Habit) => (a.time ?? '99:99').localeCompare(b.time ?? '99:99');
-  const scheduled = (editing ? habits : habits.filter((h) => isScheduled(h, date))).sort(byTime);
+  const dueToday = habits.filter((h) => isScheduled(h, date));
+  // Habits due on this day first (by time), then the rest.
+  const sorted = [...dueToday].sort(byTime).concat(habits.filter((h) => !isScheduled(h, date)).sort(byTime));
 
   const onToggle = async (habitId: number) => {
     const nowDone = await toggleHabit(habitId, date);
     if (!nowDone) return;
-    const doneCount = scheduled.filter((h) => h.id === habitId || doneByHabit.get(h.id!)?.has(date)).length;
-    if (doneCount === scheduled.length) celebrate('כל ההרגלים של היום הושלמו! 🎉');
+    const doneCount = dueToday.filter((h) => h.id === habitId || doneByHabit.get(h.id!)?.has(date)).length;
+    if (doneCount === dueToday.length) celebrate('כל ההרגלים של היום הושלמו! 🎉');
   };
 
   const quickAdd = (e: React.FormEvent) => {
@@ -50,25 +58,41 @@ export function HabitChecklist({
 
   return (
     <div>
-      {habits.length > 0 && !scheduled.length && (
-        <p className="pb-3 text-center text-sm text-muted">אין הרגלים מתוכננים ליום הזה 😌</p>
+      {habits.length > 0 && !dueToday.length && (
+        <p className="pb-3 text-center text-sm text-muted">אין הרגלים שמתוכננים ליום הזה 😌</p>
       )}
       <ul className="mb-3 grid gap-2 sm:grid-cols-2">
-        {scheduled.map((h) => {
+        {sorted.map((h) => {
           const dates = doneByHabit.get(h.id!) ?? new Set<ISODate>();
-          const done = dates.has(date);
-          const streak = currentStreak(h, dates, date);
+          const due = isScheduled(h, date);
+          const done = due && dates.has(date);
+          const streak = due ? currentStreak(h, dates, date) : 0;
+          const info = (
+            <>
+              <span className="text-xl">{h.emoji}</span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-semibold leading-tight">{h.name}</span>
+                <span className="text-xs text-muted">
+                  {describeDays(h)}
+                  {streak > 1 ? ` · ${streak} ימים ברצף` : ''}
+                  {!due && !editing ? ' · לא ביום הזה' : ''}
+                </span>
+              </span>
+              <span
+                className={`shrink-0 rounded-full px-2.5 py-1 text-sm font-bold tabular-nums ${
+                  h.time ? '' : 'text-xs font-medium text-muted'
+                }`}
+                style={h.time ? { color: h.color, background: `${h.color}1a` } : undefined}
+              >
+                {h.time ?? 'ללא שעה'}
+              </span>
+            </>
+          );
+
           if (editing) {
             return (
-              <li key={h.id} className="flex min-h-[56px] items-center gap-2 rounded-2xl bg-canvas pe-1 ps-3">
-                <span className="text-xl">{h.emoji}</span>
-                <span className="flex-1">
-                  <span className="block font-semibold leading-tight">{h.name}</span>
-                  <span className="text-xs text-muted">
-                    {describeDays(h)}
-                    {h.time ? ` · ${h.time}` : ''}
-                  </span>
-                </span>
+              <li key={h.id} className="flex min-h-[60px] items-center gap-2 rounded-2xl bg-canvas pe-1 ps-3">
+                {info}
                 <IconButton label="עריכת הרגל" onClick={() => onEdit(h)}>
                   <Pencil size={18} />
                 </IconButton>
@@ -81,27 +105,24 @@ export function HabitChecklist({
               </li>
             );
           }
+          if (!due) {
+            return (
+              <li key={h.id} className="flex min-h-[60px] items-center gap-3 rounded-2xl bg-canvas px-3 opacity-55">
+                {info}
+              </li>
+            );
+          }
           return (
             <li key={h.id}>
               <button
                 onClick={() => onToggle(h.id!)}
-                className="flex min-h-[56px] w-full items-center gap-3 rounded-2xl border-2 px-3 text-start transition active:scale-[0.98]"
+                className="flex min-h-[60px] w-full items-center gap-3 rounded-2xl border-2 px-3 text-start transition active:scale-[0.98]"
                 style={{
                   borderColor: done ? h.color : 'transparent',
                   background: done ? `${h.color}14` : 'rgb(var(--canvas))',
                 }}
               >
-                <span className="text-xl">{h.emoji}</span>
-                <span className="flex-1">
-                  <span className="block font-semibold leading-tight">{h.name}</span>
-                  {(h.time || streak > 1) && (
-                    <span className="text-xs text-muted">
-                      {h.time}
-                      {h.time && streak > 1 ? ' · ' : ''}
-                      {streak > 1 ? `${streak} ימים ברצף` : ''}
-                    </span>
-                  )}
-                </span>
+                {info}
                 <CheckCircle checked={done} color={h.color} />
               </button>
             </li>
@@ -126,10 +147,4 @@ export function HabitChecklist({
       </form>
     </div>
   );
-}
-
-const DAY_NAMES = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳'];
-function describeDays(h: Habit) {
-  if (!h.days.length) return 'כל יום';
-  return h.days.map((d) => DAY_NAMES[d]).join(' ');
 }

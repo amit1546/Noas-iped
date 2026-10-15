@@ -33,6 +33,7 @@ export function AddMealSheet({
   const [calories, setCalories] = useState('');
   const [protein, setProtein] = useState('');
   const [saveAsFixed, setSaveAsFixed] = useState(false);
+  const [extraTypes, setExtraTypes] = useState<MealType[]>([]);
 
   useEffect(() => {
     if (open) {
@@ -40,6 +41,7 @@ export function AddMealSheet({
       setCalories('');
       setProtein('');
       setSaveAsFixed(false);
+      setExtraTypes([]);
       setMealType(defaultMealType());
       setPlan(initialPlan);
       setTime('');
@@ -55,7 +57,8 @@ export function AddMealSheet({
     const prot = Math.round(Number(protein) || 0);
     let fixedMealId: number | undefined;
     if (saveAsFixed) {
-      fixedMealId = await saveFixedMeal({ name: name.trim(), mealType, calories: cal, protein: prot, active: true });
+      const types = MEAL_TYPE_ORDER.filter((t) => t === mealType || extraTypes.includes(t));
+      fixedMealId = await saveFixedMeal({ name: name.trim(), mealType, mealTypes: types, calories: cal, protein: prot, active: true });
     }
     await addMeal({
       date: plan ? day : date,
@@ -148,6 +151,28 @@ export function AddMealSheet({
           <input type="checkbox" className="h-5 w-5 accent-sky-600" checked={saveAsFixed} onChange={(e) => setSaveAsFixed(e.target.checked)} />
           <span className="font-medium">שמור גם כארוחה קבועה</span>
         </label>
+        {saveAsFixed && (
+          <div>
+            <p className="mb-1.5 text-sm font-medium text-muted">מתאימה גם ל: (אפשר לבחור כמה)</p>
+            <div className="flex flex-wrap gap-2">
+              {MEAL_TYPE_ORDER.filter((t) => t !== mealType).map((t) => {
+                const on = extraTypes.includes(t);
+                return (
+                  <button
+                    type="button"
+                    key={t}
+                    aria-pressed={on}
+                    onClick={() => setExtraTypes(on ? extraTypes.filter((x) => x !== t) : [...extraTypes, t])}
+                    className={`chip ${on ? 'border-transparent bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300' : 'text-muted hover:text-ink'}`}
+                  >
+                    {on && '✓ '}
+                    {MEAL_TYPE_LABELS[t]}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
         <Button accent="sky" type="submit" className="w-full" disabled={!name.trim()}>
           {plan ? 'הוסף לתכנון' : 'הוספה'}
         </Button>

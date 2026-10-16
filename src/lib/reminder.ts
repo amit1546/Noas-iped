@@ -92,25 +92,34 @@ export function daysSince(iso: string, today: string): number {
   return Math.round((Date.parse(today) - Date.parse(iso)) / 86400000);
 }
 
+const isStandalone = () =>
+  (navigator as Navigator & { standalone?: boolean }).standalone === true ||
+  window.matchMedia?.('(display-mode: standalone)').matches;
+
+/** Opens the share sheet with the calendar file (Save to Files, Mail, ...). Returns false if sharing isn't possible. */
+export async function shareICS(text: string, filename: string): Promise<boolean> {
+  const file = new File([text], filename, { type: 'text/calendar' });
+  if (!navigator.canShare?.({ files: [file] })) return false;
+  try {
+    await navigator.share({ files: [file] });
+  } catch (e) {
+    if ((e as Error).name !== 'AbortError') return false;
+  }
+  return true;
+}
+
 /**
  * Hands a calendar file to the phone. In the installed app (home-screen mode) a plain download
- * doesn't open anywhere, so use the share sheet, which offers Calendar or Save to Files;
- * in a normal browser tab a download opens the "add to calendar" prompt directly.
+ * doesn't open anywhere and the share sheet has no Calendar button, so open the file as a page:
+ * iPhone then asks "add to Calendar". If that is blocked, fall back to the share sheet; in a
+ * normal browser tab a download opens the same prompt directly.
  */
 export async function sendICS(text: string, filename: string): Promise<void> {
-  const standalone =
-    (navigator as Navigator & { standalone?: boolean }).standalone === true ||
-    window.matchMedia?.('(display-mode: standalone)').matches;
-  if (standalone) {
-    const file = new File([text], filename, { type: 'text/calendar' });
-    if (navigator.canShare?.({ files: [file] })) {
-      try {
-        await navigator.share({ files: [file] });
-        return;
-      } catch (e) {
-        if ((e as Error).name === 'AbortError') return;
-      }
-    }
+  if (isStandalone()) {
+    // Must run before any await, while the tap is still fresh.
+    const win = window.open('data:text/calendar;charset=utf-8,' + encodeURIComponent(text), '_blank');
+    if (win) return;
+    if (await shareICS(text, filename)) return;
   }
   downloadICS(text, filename);
 }

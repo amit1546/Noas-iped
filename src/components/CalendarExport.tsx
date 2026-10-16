@@ -12,7 +12,7 @@ import { candidateEvents, eventsICS, KIND_EMOJI, type EventKind } from '../lib/c
 import { formatLong, rangeISO } from '../lib/dates';
 import { describeDays } from '../lib/habitText';
 import { KIND_COLORS } from '../lib/kinds';
-import { sendICS } from '../lib/reminder';
+import { sendICS, shareICS } from '../lib/reminder';
 import { BottomSheet } from './BottomSheet';
 import { Button, Segmented } from './ui';
 
@@ -140,6 +140,14 @@ function CalendarExportSheet({ open, date, onClose }: { open: boolean; date: ISO
         <Button className="w-full" onClick={send} disabled={chosen.length === 0}>
           <CalendarPlus size={18} /> הוסף ליומן ({chosen.length})
         </Button>
+        <button
+            type="button"
+            className="w-full py-1 text-center text-sm text-muted underline"
+            onClick={() => chosen.length > 0 && shareICS(eventsICS(chosen, lead), 'noas-journal.ics')}
+          >
+            שמירה כקובץ
+          </button>
+
       </div>
     </BottomSheet>
   );

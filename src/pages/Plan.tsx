@@ -32,7 +32,7 @@ export function Plan() {
 
   return (
     <>
-      <PageHeader title="תכנון" subtitle="מתכננים כאן — מסמנים ✓ במסך היום" accent="blue" icon={<CalendarRange />} />
+      <PageHeader title="תכנון" accent="blue" icon={<CalendarRange />} />
       <DateNav date={date} onChange={setDate} />
 
       <div className="grid gap-5 lg:grid-cols-2">

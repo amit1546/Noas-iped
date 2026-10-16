@@ -110,13 +110,13 @@ export function AddMealSheet({
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="label" htmlFor="meal-cal">
-              קלוריות <span className="font-normal">(לא חובה)</span>
+              קלוריות
             </label>
             <input id="meal-cal" className="input" type="number" inputMode="numeric" value={calories} onChange={(e) => setCalories(e.target.value)} />
           </div>
           <div>
             <label className="label" htmlFor="meal-protein">
-              חלבון (גר׳) <span className="font-normal">(לא חובה)</span>
+              חלבון (גר׳)
             </label>
             <input id="meal-protein" className="input" type="number" inputMode="numeric" value={protein} onChange={(e) => setProtein(e.target.value)} />
           </div>
@@ -136,7 +136,7 @@ export function AddMealSheet({
           </div>
         )}
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-muted">שעה (לא חובה):</span>
+          <span className="text-sm font-medium text-muted">שעה:</span>
           <OptionalTime
             value={time}
             label="שעה לארוחה"

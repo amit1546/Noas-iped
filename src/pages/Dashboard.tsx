@@ -1,4 +1,4 @@
-import { Activity, Apple, Check, Dumbbell, Flame, LayoutDashboard, Scale } from 'lucide-react';
+import { Apple, Check, Dumbbell, Flame, LayoutDashboard, Scale } from 'lucide-react';
 import { isWorkoutDone } from '../db/schema';
 import { useMemo } from 'react';
 import {
@@ -24,6 +24,7 @@ import {
   useSettings,
   useWorkoutsBetween,
 } from '../db/queries';
+import { ACCENT_300, ACCENT_500 } from '../lib/appearance';
 import { formatShort, rangeISO, shiftISO, todayISO, weekdayShort } from '../lib/dates';
 import { isScheduled } from '../lib/streaks';
 import { sumMeals } from '../lib/stats';
@@ -125,7 +126,7 @@ export function Dashboard() {
                   <Tooltip {...tooltipStyle} formatter={(v) => [`${v}%`, 'הושלם']} cursor={{ fill: 'rgb(var(--line) / 0.4)' }} />
                   <Bar dataKey="pct" radius={[10, 10, 4, 4]}>
                     {[...habitDays].reverse().map((d, i) => (
-                      <Cell key={i} fill={d.pct === 100 ? '#3b82f6' : '#93c5fd'} />
+                      <Cell key={i} fill={d.pct === 100 ? ACCENT_500 : ACCENT_300} />
                     ))}
                   </Bar>
                 </BarChart>
@@ -170,7 +171,7 @@ export function Dashboard() {
                   <XAxis dataKey="date" {...axisProps} />
                   <YAxis domain={['dataMin - 1', 'dataMax + 1']} {...axisProps} width={36} orientation="right" />
                   <Tooltip {...tooltipStyle} formatter={(v) => [`${v} ק״ג`, 'משקל']} />
-                  <Line type="monotone" dataKey="kg" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4, fill: '#3b82f6' }} />
+                  <Line type="monotone" dataKey="kg" stroke={ACCENT_500} strokeWidth={3} dot={{ r: 4, fill: ACCENT_500 }} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -184,9 +185,6 @@ export function Dashboard() {
 
       </div>
 
-      <p className="mt-6 flex items-center justify-center gap-1.5 text-sm text-muted">
-        <Activity size={14} /> הנתונים נשמרים במכשיר הזה בלבד — זכור לגבות בהגדרות
-      </p>
     </>
   );
 }

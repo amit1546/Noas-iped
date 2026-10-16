@@ -2,7 +2,7 @@ import { HashRouter, Route, Routes } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { ConfettiProvider } from './components/Confetti';
 import { useSettings } from './db/queries';
-import { useApplyTheme } from './lib/theme';
+import { useApplyAppearance } from './lib/theme';
 import { Today } from './pages/Today';
 import { CalendarPage } from './pages/Calendar';
 import { Plan } from './pages/Plan';
@@ -11,7 +11,7 @@ import { Dashboard } from './pages/Dashboard';
 
 export default function App() {
   const settings = useSettings();
-  useApplyTheme(settings.theme);
+  useApplyAppearance(settings);
   return (
     <ConfettiProvider>
       <HashRouter>

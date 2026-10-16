@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { addTask, deleteTask, moveTask, toggleTask, useTasks } from '../db/queries';
 import type { ISODate, Priority, Task } from '../db/schema';
 import { shiftISO, todayISO } from '../lib/dates';
+import { ACCENT_500 } from '../lib/appearance';
 import { OptionalTime } from './OptionalTime';
 import { CheckCircle, IconButton } from './ui';
 
@@ -94,7 +95,7 @@ function TaskRow({ task, canCarry }: { task: Task; canCarry: boolean }) {
       className="flex items-center gap-2 rounded-2xl bg-canvas pe-1 ps-3"
     >
       <button onClick={() => toggleTask(task)} className="flex min-h-[52px] flex-1 items-center gap-3 text-start">
-        <CheckCircle checked={task.done} color="#3b82f6" />
+        <CheckCircle checked={task.done} color={ACCENT_500} />
         <span className={`flex-1 font-medium transition ${task.done ? 'text-muted line-through' : ''}`}>
           {task.time && (
             <span className="me-2 text-sm font-semibold tabular-nums text-blue-600 dark:text-blue-400">{task.time}</span>

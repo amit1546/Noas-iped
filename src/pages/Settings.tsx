@@ -1,14 +1,17 @@
-import { Download, Moon, Settings as SettingsIcon, ShieldCheck, Smartphone, Sun, Target, Trash2, Upload } from 'lucide-react';
+import { Check, Download, Moon, Settings as SettingsIcon, ShieldCheck, Smartphone, Sun, Target, Trash2, Upload } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { Button, Card, CardTitle, PageHeader, Segmented } from '../components/ui';
 import { db } from '../db/db';
 import { clearAll, exportBackup, importBackup, parseBackup, saveBackup } from '../db/backup';
 import { formatShort, todayISO } from '../lib/dates';
 import { updateSettings, useSettings } from '../db/queries';
+import { ACCENT_PRESETS, BACKGROUND_PRESETS } from '../lib/appearance';
 import type { Settings, ThemePref } from '../db/schema';
 
 export function SettingsPage() {
   const settings = useSettings();
+  // The background previews show the light or dark version, whichever the app is showing now.
+  const dark = settings.theme === 'dark' || (settings.theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
   const fileRef = useRef<HTMLInputElement>(null);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
@@ -49,17 +52,73 @@ export function SettingsPage() {
           </div>
         </Card>
 
-        <Card>
+        <Card className="lg:col-span-2">
           <CardTitle title="מראה" icon={settings.theme === 'dark' ? <Moon size={18} /> : <Sun size={18} />} />
-          <Segmented<ThemePref>
-            value={settings.theme}
-            onChange={(theme) => updateSettings({ theme })}
-            options={[
-              { value: 'system', label: 'אוטומטי' },
-              { value: 'light', label: '☀️ בהיר' },
-              { value: 'dark', label: '🌙 כהה' },
-            ]}
-          />
+          <div className="space-y-5">
+            <Segmented<ThemePref>
+              value={settings.theme}
+              onChange={(theme) => updateSettings({ theme })}
+              options={[
+                { value: 'system', label: 'אוטומטי' },
+                { value: 'light', label: '☀️ בהיר' },
+                { value: 'dark', label: '🌙 כהה' },
+              ]}
+            />
+            <div>
+              <p className="label">צבע ראשי</p>
+              <div className="flex flex-wrap gap-3" role="group" aria-label="צבע ראשי">
+                {ACCENT_PRESETS.map((p) => {
+                  const on = settings.accent === p.id;
+                  return (
+                    <button
+                      key={p.id}
+                      onClick={() => updateSettings({ accent: p.id })}
+                      aria-pressed={on}
+                      aria-label={`צבע ${p.label}`}
+                      title={p.label}
+                      className="grid h-12 w-12 place-items-center rounded-full text-white transition active:scale-90"
+                      style={{
+                        background: p.swatch,
+                        boxShadow: on ? `0 0 0 3px rgb(var(--surface)), 0 0 0 5px ${p.swatch}` : 'none',
+                      }}
+                    >
+                      {on && <Check size={22} strokeWidth={3} />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div>
+              <p className="label">צבע רקע</p>
+              <div className="flex flex-wrap gap-3" role="group" aria-label="צבע רקע">
+                {BACKGROUND_PRESETS.map((p) => {
+                  const on = settings.background === p.id;
+                  return (
+                    <button
+                      key={p.id}
+                      onClick={() => updateSettings({ background: p.id })}
+                      aria-pressed={on}
+                      aria-label={`רקע ${p.label}`}
+                      className={`flex min-w-[84px] flex-col items-center gap-1.5 rounded-2xl border-2 p-2.5 transition active:scale-95 ${
+                        on ? 'border-blue-600' : 'border-line'
+                      }`}
+                    >
+                      <span
+                        className="grid h-11 w-16 place-items-center rounded-xl border border-black/10"
+                        style={{ background: `rgb(${(dark ? p.dark : p.light).canvas})` }}
+                      >
+                        <span
+                          className="h-5 w-10 rounded-md border border-black/10"
+                          style={{ background: `rgb(${(dark ? p.dark : p.light).surface})` }}
+                        />
+                      </span>
+                      <span className="text-sm font-semibold">{p.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
         </Card>
 
         <Card className="lg:col-span-2">

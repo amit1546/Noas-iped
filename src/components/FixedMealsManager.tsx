@@ -107,7 +107,7 @@ export function FixedMealsManager({ open, onClose }: { open: boolean; onClose: (
             className="input bg-surface"
             type="number"
             inputMode="numeric"
-            placeholder="קלוריות (לא חובה)"
+            placeholder="קלוריות"
             value={form.calories}
             onChange={(e) => setForm({ ...form, calories: e.target.value })}
             aria-label="קלוריות"
@@ -116,7 +116,7 @@ export function FixedMealsManager({ open, onClose }: { open: boolean; onClose: (
             className="input bg-surface"
             type="number"
             inputMode="numeric"
-            placeholder="חלבון (לא חובה)"
+            placeholder="חלבון (גר׳)"
             value={form.protein}
             onChange={(e) => setForm({ ...form, protein: e.target.value })}
             aria-label="חלבון"

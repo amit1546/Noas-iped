@@ -3,6 +3,12 @@ import { TABLE_NAMES, type JournalDB } from './db';
 export const BACKUP_APP_ID = 'noas-journal';
 export const BACKUP_VERSION = 1;
 
+/** "יומן עמית 2026-10-15.json" — the name backups get when saved to Files. */
+export function backupFileName(date = new Date()): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `יומן עמית ${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}.json`;
+}
+
 export interface BackupFile {
   app: typeof BACKUP_APP_ID;
   version: number;
@@ -68,11 +74,11 @@ export async function clearAll(database: JournalDB): Promise<void> {
  * Resolves to false if the person cancelled.
  */
 export async function saveBackup(backup: BackupFile): Promise<boolean> {
-  const name = `journal-backup-${backup.exportedAt.slice(0, 10)}.json`;
+  const name = backupFileName();
   const file = new File([JSON.stringify(backup, null, 2)], name, { type: 'application/json' });
   if (navigator.canShare?.({ files: [file] })) {
     try {
-      await navigator.share({ files: [file], title: 'גיבוי היומן שלי' });
+      await navigator.share({ files: [file], title: 'יומן עמית' });
       return true;
     } catch (e) {
       if ((e as Error).name === 'AbortError') return false;
@@ -87,7 +93,7 @@ export function downloadBackup(backup: BackupFile) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `journal-backup-${backup.exportedAt.slice(0, 10)}.json`;
+  a.download = backupFileName();
   document.body.appendChild(a);
   a.click();
   a.remove();

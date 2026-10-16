@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import { registerSW } from 'virtual:pwa-register';
 import './index.css';
+import { applyCachedAppearance } from './lib/appearance';
 
 // Pick up new versions right away: when a new service worker takes over, reload
 // once so the page and its files always come from the same version.
@@ -21,6 +22,9 @@ if ('serviceWorker' in navigator) {
     }
   });
 }
+
+// Paint the saved look immediately, before the data loads.
+applyCachedAppearance();
 
 // Ask the browser to keep our IndexedDB data even under storage pressure.
 navigator.storage?.persist?.().catch(() => {});

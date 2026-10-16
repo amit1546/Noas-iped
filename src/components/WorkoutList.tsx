@@ -4,11 +4,12 @@ import { useState } from 'react';
 import { addWorkout, deleteWorkout, setWorkoutDone, useWorkoutsOn } from '../db/queries';
 import { isWorkoutDone, type ISODate } from '../db/schema';
 import { todayISO } from '../lib/dates';
+import { ACCENT_600 } from '../lib/appearance';
 import { useCelebrate } from './Confetti';
 import { OptionalTime } from './OptionalTime';
 import { CheckCircle, IconButton } from './ui';
 
-const COLOR = '#2563eb';
+const COLOR = ACCENT_600;
 
 /** Workouts for a day with a one-line add (name + optional time). */
 export function WorkoutList({ date }: { date: ISODate }) {

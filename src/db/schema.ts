@@ -115,12 +115,18 @@ export interface BodyWeight {
 }
 
 export type ThemePref = 'system' | 'light' | 'dark';
+export type AccentId = 'blue' | 'indigo' | 'violet' | 'pink' | 'red' | 'orange' | 'green' | 'teal' | 'graphite';
+export type BackgroundId = 'cool' | 'neutral' | 'warm' | 'mint' | 'lavender';
 
 export interface Settings {
   id: 'main';
   calorieGoal: number;
   proteinGoal: number;
   theme: ThemePref;
+  /** Main color of the app */
+  accent: AccentId;
+  /** Page and card tones */
+  background: BackgroundId;
   /** Date of the last backup export */
   lastBackupAt?: ISODate;
   /** Weekdays that are work days by default (0 = Sunday) */
@@ -134,6 +140,8 @@ export const DEFAULT_SETTINGS: Settings = {
   calorieGoal: 2000,
   proteinGoal: 120,
   theme: 'system',
+  accent: 'blue',
+  background: 'cool',
   // Most people's work days aren't a fixed weekly pattern, so start with none and let them mark dates.
   workDays: [],
 };

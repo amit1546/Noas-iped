@@ -95,7 +95,7 @@ export function HabitForm({
         </div>
         <div>
           <label className="label" htmlFor="habit-time">
-            שעה <span className="font-normal">(לא חובה)</span>
+            שעה
           </label>
           <div className="flex gap-2">
             <input id="habit-time" type="time" className="input" value={time} onChange={(e) => setTime(e.target.value)} />

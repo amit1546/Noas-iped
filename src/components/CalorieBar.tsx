@@ -1,10 +1,11 @@
 import { Check, Flame, Pencil } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { updateSettings, useSettings } from '../db/queries';
+import { ACCENT_600 } from '../lib/appearance';
 import { calorieStatus, type DayTotals } from '../lib/stats';
 import { ProgressBar } from './ProgressRing';
 
-const STATUS_COLOR = { under: '#2563eb', near: '#f59e0b', over: '#ef4444' } as const;
+const STATUS_COLOR = { under: ACCENT_600, near: '#f59e0b', over: '#ef4444' } as const;
 
 /** A number you tap to edit in place (used for the daily calorie and protein goals). */
 function InlineGoal({ value, label, onSave }: { value: number; label: string; onSave: (n: number) => void }) {

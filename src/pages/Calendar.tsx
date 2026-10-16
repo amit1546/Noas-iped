@@ -93,7 +93,7 @@ export function CalendarPage() {
 
   return (
     <>
-      <PageHeader title="לוח שנה" subtitle="לחץ על יום כדי לראות מה יש בו" accent="blue" icon={<CalendarDays />} />
+      <PageHeader title="לוח שנה" accent="blue" icon={<CalendarDays />} />
 
       <Card className="mb-4 p-4">
         <div className="flex flex-wrap items-center gap-3">
@@ -105,13 +105,11 @@ export function CalendarPage() {
             {marking ? <Check size={18} /> : <Briefcase size={18} />}
             {marking ? 'סיום סימון' : 'סימון ימי עבודה'}
           </button>
-          <p className="min-w-0 flex-1 text-sm text-muted">
-            {marking ? 'לחץ על כל יום שיש בו עבודה, ולחיצה נוספת מבטלת' : 'מסמנים תאריכים מסוימים, בלי חוקים קבועים'}
-          </p>
+          {marking && <p className="min-w-0 flex-1 text-sm text-muted">לחץ על כל יום שיש בו עבודה, ולחיצה נוספת מבטלת</p>}
         </div>
         <details className="group mt-3">
           <summary className="cursor-pointer text-sm font-medium text-muted marker:content-none hover:text-ink">
-            ימים קבועים בשבוע (לא חובה) ▾
+            ימים קבועים בשבוע ▾
           </summary>
           <div className="mt-2 flex gap-1.5" role="group" aria-label="ימי עבודה קבועים בשבוע">
             {WEEKDAYS.map((label, i) => {

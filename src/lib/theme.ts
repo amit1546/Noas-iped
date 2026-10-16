@@ -1,16 +1,15 @@
 import { useEffect } from 'react';
-import type { ThemePref } from '../db/schema';
+import type { Settings } from '../db/schema';
+import { applyAppearance, cacheAppearance } from './appearance';
 
-export function useApplyTheme(pref: ThemePref) {
+/** Applies the chosen mode, main color and background to the whole app, and keeps following the device's dark mode. */
+export function useApplyAppearance({ theme, accent, background }: Pick<Settings, 'theme' | 'accent' | 'background'>) {
   useEffect(() => {
     const mq = window.matchMedia('(prefers-color-scheme: dark)');
-    const apply = () => {
-      const dark = pref === 'dark' || (pref === 'system' && mq.matches);
-      document.documentElement.classList.toggle('dark', dark);
-      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#0b1120' : '#f3f6fc');
-    };
+    const apply = () => applyAppearance(document.documentElement, { theme, accent, background }, mq.matches);
     apply();
+    cacheAppearance({ theme, accent, background });
     mq.addEventListener('change', apply);
     return () => mq.removeEventListener('change', apply);
-  }, [pref]);
+  }, [theme, accent, background]);
 }

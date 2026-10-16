@@ -1,7 +1,7 @@
 import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { deleteHabit, toggleHabit, useAllHabitLogs, useHabits } from '../db/queries';
-import type { Habit, ISODate } from '../db/schema';
+import type { Habit, ISODate, Weekday } from '../db/schema';
 import { describeDays } from '../lib/habitText';
 import { currentStreak, isScheduled } from '../lib/streaks';
 import { useCelebrate } from './Confetti';
@@ -61,38 +61,39 @@ export function HabitChecklist({
       {habits.length > 0 && !dueToday.length && (
         <p className="pb-3 text-center text-sm text-muted">אין הרגלים שמתוכננים ליום הזה 😌</p>
       )}
-      <ul className="mb-3 grid gap-2 sm:grid-cols-2">
+      <ul className="mb-3 space-y-2">
         {sorted.map((h) => {
           const dates = doneByHabit.get(h.id!) ?? new Set<ISODate>();
           const due = isScheduled(h, date);
           const done = due && dates.has(date);
           const streak = due ? currentStreak(h, dates, date) : 0;
-          const info = (
+
+          // Same layout in every state: [check] [icon] [name + week strip] [time]
+          const body = (
             <>
-              <span className="text-xl">{h.emoji}</span>
+              <span className="text-2xl">{h.emoji}</span>
               <span className="min-w-0 flex-1">
-                <span className="block truncate font-semibold leading-tight">{h.name}</span>
-                <span className="text-xs text-muted">
-                  {describeDays(h)}
-                  {streak > 1 ? ` · ${streak} ימים ברצף` : ''}
-                  {!due && !editing ? ' · לא ביום הזה' : ''}
+                <span className="block truncate text-base font-semibold leading-tight">{h.name}</span>
+                <span className="mt-1.5 flex items-center gap-2">
+                  <WeekStrip habit={h} />
+                  {streak > 1 && <span className="text-xs text-muted">{streak} ברצף</span>}
                 </span>
               </span>
-              <span
-                className={`shrink-0 rounded-full px-2.5 py-1 text-sm font-bold tabular-nums ${
-                  h.time ? '' : 'text-xs font-medium text-muted'
-                }`}
-                style={h.time ? { color: h.color, background: `${h.color}1a` } : undefined}
-              >
-                {h.time ?? 'ללא שעה'}
-              </span>
+              {h.time && (
+                <span
+                  className="shrink-0 rounded-full px-3 py-1 text-sm font-bold tabular-nums"
+                  style={{ color: h.color, background: `${h.color}1a` }}
+                >
+                  {h.time}
+                </span>
+              )}
             </>
           );
 
           if (editing) {
             return (
-              <li key={h.id} className="flex min-h-[60px] items-center gap-2 rounded-2xl bg-canvas pe-1 ps-3">
-                {info}
+              <li key={h.id} className="flex min-h-[64px] items-center gap-3 rounded-2xl bg-canvas pe-1 ps-3">
+                {body}
                 <IconButton label="עריכת הרגל" onClick={() => onEdit(h)}>
                   <Pencil size={18} />
                 </IconButton>
@@ -107,8 +108,9 @@ export function HabitChecklist({
           }
           if (!due) {
             return (
-              <li key={h.id} className="flex min-h-[60px] items-center gap-3 rounded-2xl bg-canvas px-3 opacity-55">
-                {info}
+              <li key={h.id} className="flex min-h-[64px] items-center gap-3 rounded-2xl bg-canvas px-3 opacity-55">
+                <span className="h-7 w-7 shrink-0 rounded-full border-2 border-dashed border-line" aria-hidden />
+                {body}
               </li>
             );
           }
@@ -116,14 +118,14 @@ export function HabitChecklist({
             <li key={h.id}>
               <button
                 onClick={() => onToggle(h.id!)}
-                className="flex min-h-[60px] w-full items-center gap-3 rounded-2xl border-2 px-3 text-start transition active:scale-[0.98]"
+                className="flex min-h-[64px] w-full items-center gap-3 rounded-2xl border-2 px-3 text-start transition active:scale-[0.98]"
                 style={{
                   borderColor: done ? h.color : 'transparent',
                   background: done ? `${h.color}14` : 'rgb(var(--canvas))',
                 }}
               >
-                {info}
                 <CheckCircle checked={done} color={h.color} />
+                {body}
               </button>
             </li>
           );
@@ -146,5 +148,30 @@ export function HabitChecklist({
         </button>
       </form>
     </div>
+  );
+}
+
+const WEEK_LETTERS = ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש'];
+
+/** Seven small circles for the week; the habit's days are filled with its color. */
+function WeekStrip({ habit }: { habit: Habit }) {
+  const everyDay = !habit.days.length || habit.days.length === 7;
+  return (
+    <span className="flex gap-1" role="img" aria-label={describeDays(habit)}>
+      <span className="sr-only">{describeDays(habit)}</span>
+      {WEEK_LETTERS.map((letter, i) => {
+        const on = everyDay || habit.days.includes(i as Weekday);
+        return (
+          <span
+            key={letter}
+            aria-hidden
+            className="grid h-5 w-5 place-items-center rounded-full text-[10px] font-bold leading-none"
+            style={on ? { background: habit.color, color: '#fff' } : { background: 'rgb(var(--line))', color: 'rgb(var(--muted))' }}
+          >
+            {letter}
+          </span>
+        );
+      })}
+    </span>
   );
 }

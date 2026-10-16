@@ -1,6 +1,7 @@
 import 'fake-indexeddb/auto';
 import { describe, expect, it } from 'vitest';
 import { JournalDB } from '../db/db';
+import { DEFAULT_SETTINGS } from '../db/schema';
 import { clearAll, exportBackup, importBackup, parseBackup } from '../db/backup';
 
 describe('backup', () => {
@@ -9,7 +10,7 @@ describe('backup', () => {
     await db.tasks.add({ title: 'לקנות חלב', date: '2026-03-10', done: false, priority: 'medium' });
     const fmId = await db.fixedMeals.add({ name: 'שייק', mealType: 'breakfast', calories: 300, protein: 25, active: true, order: 1 });
     await db.meals.add({ date: '2026-03-10', mealType: 'breakfast', name: 'שייק', calories: 300, protein: 25, fixedMealId: fmId });
-    await db.settings.put({ id: 'main', calorieGoal: 1800, proteinGoal: 140, theme: 'dark', workDays: [0, 1, 2, 3, 4] });
+    await db.settings.put({ ...DEFAULT_SETTINGS, calorieGoal: 1800, proteinGoal: 140, theme: 'dark' });
 
     const text = JSON.stringify(await exportBackup(db));
     await clearAll(db);
@@ -25,10 +26,7 @@ describe('backup', () => {
     const db = new JournalDB('test-reminders');
     await db.reminders.add({ date: '2026-03-12', text: 'להתקשר לאמא', time: '18:00' });
     await db.settings.put({
-      id: 'main',
-      calorieGoal: 2000,
-      proteinGoal: 120,
-      theme: 'system',
+      ...DEFAULT_SETTINGS,
       workDays: [1, 2],
       workOverrides: { '2026-03-12': false },
     });

@@ -1,4 +1,4 @@
-import { Check, Download, Moon, Settings as SettingsIcon, ShieldCheck, Smartphone, Sun, Trash2, Upload } from 'lucide-react';
+import { Check, Download, Moon, Settings as SettingsIcon, ShieldCheck, Sun, Trash2, Upload } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { Button, Card, CardTitle, PageHeader, Segmented } from '../components/ui';
 import { db } from '../db/db';
@@ -142,15 +142,6 @@ export function SettingsPage() {
               })}
             </div>
           </div>
-        </Card>
-
-        <Card>
-          <CardTitle title="התקנה כאפליקציה" accent="blue" icon={<Smartphone size={18} />} />
-          <ol className="list-inside list-decimal space-y-1 text-sm text-muted">
-            <li>פתח את האתר ב-Safari (באייפד / אייפון) או ב-Chrome (אנדרואיד / מחשב)</li>
-            <li>לחץ על כפתור השיתוף ⬆️</li>
-            <li>בחר "הוסף למסך הבית"</li>
-          </ol>
         </Card>
 
         <Card>

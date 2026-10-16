@@ -1,6 +1,6 @@
 import { Apple, Check, Dumbbell, Flame, LayoutDashboard, Scale } from 'lucide-react';
 import { isWorkoutDone } from '../db/schema';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Bar,
   BarChart,
@@ -14,7 +14,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { Card, CardTitle, EmptyState, PageHeader } from '../components/ui';
+import { Card, CardTitle, EmptyState, PageHeader, Segmented } from '../components/ui';
 import { WeightEntry } from '../components/WeightCard';
 import {
   useAllHabitLogs,
@@ -40,10 +40,20 @@ const tooltipStyle = {
 };
 const axisProps = { stroke: 'rgb(var(--muted))', fontSize: 12, tickLine: false, axisLine: false };
 
+type Range = 'week' | 'month' | '3m' | 'year';
+const RANGES: Record<Range, { days: number; bucket: number; label: string; text: string }> = {
+  week: { days: 7, bucket: 1, label: 'שבוע', text: '7 הימים האחרונים' },
+  month: { days: 30, bucket: 1, label: 'חודש', text: '30 הימים האחרונים' },
+  '3m': { days: 91, bucket: 7, label: '3 חודשים', text: '3 החודשים האחרונים, בממוצע שבועי' },
+  year: { days: 360, bucket: 30, label: 'שנה', text: 'השנה האחרונה, בממוצע חודשי' },
+};
+
 export function Dashboard() {
   const today = todayISO();
-  const from = shiftISO(today, -6);
-  const days = rangeISO(from, 7);
+  const [range, setRange] = useState<Range>('week');
+  const cfg = RANGES[range];
+  const from = shiftISO(today, -(cfg.days - 1));
+  const days = rangeISO(from, cfg.days);
   const settings = useSettings();
   const habits = useHabits();
   const logs = useAllHabitLogs();
@@ -52,31 +62,54 @@ export function Dashboard() {
   const workoutLog = [...workouts].sort((a, b) => b.date.localeCompare(a.date) || (b.time ?? '').localeCompare(a.time ?? ''));
   const weights = useBodyWeights();
 
+  // Groups of days: one per day for a week/month, one per week or month for longer ranges.
+  const buckets = useMemo(() => {
+    const out: { label: string; days: string[] }[] = [];
+    for (let i = 0; i < days.length; i += cfg.bucket) {
+      const group = days.slice(i, i + cfg.bucket);
+      out.push({ label: cfg.bucket === 1 && range === 'week' ? weekdayShort(group[0]) : formatShort(group[0]), days: group });
+    }
+    return out;
+  }, [days.join(), cfg.bucket, range]);
+
   const habitDays = useMemo(() => {
     const logSet = new Set(logs.map((l) => `${l.habitId}|${l.date}`));
-    return days.map((d) => {
-      const sched = habits.filter((h) => logSet.has(`${h.id}|${d}`) || (isScheduled(h, d) && h.createdAt <= d));
-      const done = sched.filter((h) => logSet.has(`${h.id}|${d}`)).length;
-      return { day: weekdayShort(d), pct: sched.length ? Math.round((done / sched.length) * 100) : 0, total: sched.length };
+    return buckets.map((b) => {
+      let done = 0;
+      let total = 0;
+      for (const d of b.days) {
+        const sched = habits.filter((h) => logSet.has(`${h.id}|${d}`) || (isScheduled(h, d) && h.createdAt <= d));
+        total += sched.length;
+        done += sched.filter((h) => logSet.has(`${h.id}|${d}`)).length;
+      }
+      return { day: b.label, pct: total ? Math.round((done / total) * 100) : 0, total };
     });
-  }, [days.join(), habits, logs]);
+  }, [buckets, habits, logs]);
 
-  const calorieDays = days.map((d) => ({
-    day: weekdayShort(d),
-    calories: sumMeals(meals.filter((m) => m.date === d)).calories,
-  }));
+  // Calories: the average over the days that have meals logged.
+  const calorieDays = buckets.map((b) => {
+    const totals = b.days.map((d) => sumMeals(meals.filter((m) => m.date === d)).calories).filter((c) => c > 0);
+    return { day: b.label, calories: totals.length ? Math.round(totals.reduce((x, y) => x + y, 0) / totals.length) : 0 };
+  });
   const loggedCalorieDays = calorieDays.filter((d) => d.calories > 0);
 
-
-  const weightData = weights.slice(-30).map((w) => ({ date: formatShort(w.date), kg: w.kg }));
+  const weightData = weights.filter((w) => w.date >= from).map((w) => ({ date: formatShort(w.date), kg: w.kg }));
+  const doneWorkouts = workouts.filter(isWorkoutDone).length;
 
   return (
     <>
-      <PageHeader title="סיכום" subtitle="7 הימים האחרונים" accent="sky" icon={<LayoutDashboard />} />
+      <PageHeader title="סיכום" subtitle={cfg.text} accent="sky" icon={<LayoutDashboard />} />
+      <div className="mb-4">
+        <Segmented<Range>
+          value={range}
+          onChange={setRange}
+          options={(Object.keys(RANGES) as Range[]).map((r) => ({ value: r, label: RANGES[r].label }))}
+        />
+      </div>
 
       <div className="grid gap-5 lg:grid-cols-2">
         <Card>
-          <CardTitle title="יומן אימונים" icon={<Dumbbell size={18} />} />
+          <CardTitle title={`יומן אימונים${workouts.length ? ` · ${doneWorkouts} מתוך ${workouts.length}` : ''}`} icon={<Dumbbell size={18} />} />
           {workoutLog.length ? (
             <ul className="space-y-1.5">
               {workoutLog.map((w) => {
@@ -110,7 +143,7 @@ export function Dashboard() {
               })}
             </ul>
           ) : (
-            <EmptyState emoji="💪" title="אין אימונים ב-7 הימים האחרונים" text="מוסיפים אימון בכרטיס האימונים במסך היום" />
+            <EmptyState emoji="💪" title="אין אימונים בתקופה הזאת" text="מוסיפים אימון בכרטיס האימונים במסך היום" />
           )}
         </Card>
 
@@ -121,7 +154,7 @@ export function Dashboard() {
               <ResponsiveContainer>
                 <BarChart data={[...habitDays].reverse()} maxBarSize={44}>
                   <CartesianGrid vertical={false} stroke="rgb(var(--line))" />
-                  <XAxis dataKey="day" {...axisProps} />
+                  <XAxis dataKey="day" {...axisProps} interval="preserveStartEnd" />
                   <YAxis domain={[0, 100]} {...axisProps} width={32} orientation="right" />
                   <Tooltip {...tooltipStyle} formatter={(v) => [`${v}%`, 'הושלם']} cursor={{ fill: 'rgb(var(--line) / 0.4)' }} />
                   <Bar dataKey="pct" radius={[10, 10, 4, 4]}>
@@ -138,13 +171,13 @@ export function Dashboard() {
         </Card>
 
         <Card>
-          <CardTitle title="קלוריות מול יעד" accent="sky" icon={<Apple size={18} />} />
+          <CardTitle title={range === '3m' || range === 'year' ? 'קלוריות מול יעד (ממוצע)' : 'קלוריות מול יעד'} accent="sky" icon={<Apple size={18} />} />
           {loggedCalorieDays.length ? (
             <div className="h-56" dir="ltr">
               <ResponsiveContainer>
                 <BarChart data={[...calorieDays].reverse()} maxBarSize={44}>
                   <CartesianGrid vertical={false} stroke="rgb(var(--line))" />
-                  <XAxis dataKey="day" {...axisProps} />
+                  <XAxis dataKey="day" {...axisProps} interval="preserveStartEnd" />
                   <YAxis {...axisProps} width={42} orientation="right" />
                   <Tooltip {...tooltipStyle} formatter={(v) => [`${v} קל׳`, 'נאכל']} cursor={{ fill: 'rgb(var(--line) / 0.4)' }} />
                   <ReferenceLine y={settings.calorieGoal} stroke="#f59e0b" strokeDasharray="6 4" strokeWidth={2} />
@@ -157,7 +190,7 @@ export function Dashboard() {
               </ResponsiveContainer>
             </div>
           ) : (
-            <EmptyState emoji="🥗" title="עוד אין נתוני תזונה השבוע" />
+            <EmptyState emoji="🥗" title="אין נתוני תזונה בתקופה הזאת" />
           )}
         </Card>
 
@@ -176,7 +209,7 @@ export function Dashboard() {
               </ResponsiveContainer>
             </div>
           ) : (
-            <EmptyState emoji="⚖️" title="רשום משקל לפחות פעמיים כדי לראות מגמה" />
+            <EmptyState emoji="⚖️" title="צריך לפחות שתי מדידות משקל בתקופה הזאת" />
           )}
           <div className="mt-4 border-t border-line pt-3">
             <WeightEntry />

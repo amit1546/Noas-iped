@@ -1,7 +1,6 @@
 import { Bell, CalendarClock, CalendarRange, Check, Dumbbell, Flame, ListChecks, Pencil, Plus, Settings2 } from 'lucide-react';
 import { useState } from 'react';
 import { AddMealSheet } from '../components/AddMealSheet';
-import { CalendarExportButton } from '../components/CalendarExport';
 import { DateNav } from '../components/DateNav';
 import { FixedMealsManager } from '../components/FixedMealsManager';
 import { HabitChecklist } from '../components/HabitChecklist';
@@ -33,7 +32,7 @@ export function Plan() {
 
   return (
     <>
-      <PageHeader title="תכנון" accent="blue" icon={<CalendarRange />} action={<CalendarExportButton date={date} />} />
+      <PageHeader title="תכנון" accent="blue" icon={<CalendarRange />} />
       <DateNav date={date} onChange={setDate} />
 
       <div className="grid gap-5 lg:grid-cols-2">

@@ -18,6 +18,7 @@ import {
 import { useMemo, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useCelebrate } from '../components/Confetti';
+import { CalendarExportButton } from '../components/CalendarExport';
 import { CalorieBar } from '../components/CalorieBar';
 import { WorkBadge } from '../components/WorkBadge';
 import { MealDetails } from '../components/MealDetails';
@@ -275,13 +276,16 @@ export function Today() {
       ) : (
         <>
           <Card>
-            <div className="mb-4 flex flex-wrap gap-x-4 gap-y-1 text-xs font-semibold">
+            <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-semibold">
               {(Object.keys(KIND) as Kind[]).map((k) => (
                 <span key={k} className="flex items-center gap-1.5" style={{ color: KIND[k].color }}>
                   <span className="h-2.5 w-2.5 rounded-full" style={{ background: KIND[k].color }} />
                   {KIND[k].label}
                 </span>
               ))}
+              <span className="ms-auto">
+                <CalendarExportButton date={date} label="ליומן הטלפון" />
+              </span>
             </div>
             {timed.length > 0 && <Section title="לפי שעות" items={timed} onToggle={onToggle} />}
             {untimed.length > 0 && (

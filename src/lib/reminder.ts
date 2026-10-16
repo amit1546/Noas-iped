@@ -91,3 +91,26 @@ export function downloadICS(text: string, filename: string) {
 export function daysSince(iso: string, today: string): number {
   return Math.round((Date.parse(today) - Date.parse(iso)) / 86400000);
 }
+
+/**
+ * Hands a calendar file to the phone. In the installed app (home-screen mode) a plain download
+ * doesn't open anywhere, so use the share sheet, which offers Calendar or Save to Files;
+ * in a normal browser tab a download opens the "add to calendar" prompt directly.
+ */
+export async function sendICS(text: string, filename: string): Promise<void> {
+  const standalone =
+    (navigator as Navigator & { standalone?: boolean }).standalone === true ||
+    window.matchMedia?.('(display-mode: standalone)').matches;
+  if (standalone) {
+    const file = new File([text], filename, { type: 'text/calendar' });
+    if (navigator.canShare?.({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file] });
+        return;
+      } catch (e) {
+        if ((e as Error).name === 'AbortError') return;
+      }
+    }
+  }
+  downloadICS(text, filename);
+}

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { addReminder, deleteReminder, useReminders } from '../db/queries';
 import type { ISODate, Reminder } from '../db/schema';
 import { KIND_COLORS } from '../lib/kinds';
-import { downloadICS, oneOffReminderICS } from '../lib/reminder';
+import { oneOffReminderICS, sendICS } from '../lib/reminder';
 import { OptionalTime } from './OptionalTime';
 import { IconButton } from './ui';
 
@@ -24,7 +24,7 @@ export function ReminderList({ date }: { date: ISODate }) {
   };
 
   const addToPhone = (r: Reminder) =>
-    downloadICS(oneOffReminderICS({ title: r.text, date: r.date, time: r.time }), 'reminder.ics');
+    sendICS(oneOffReminderICS({ title: r.text, date: r.date, time: r.time }), 'reminder.ics');
 
   return (
     <div>

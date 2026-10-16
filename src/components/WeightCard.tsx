@@ -2,7 +2,7 @@ import { BellRing, Scale } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { setBodyWeight, useBodyWeights } from '../db/queries';
 import { formatShort, todayISO } from '../lib/dates';
-import { daysSince, downloadICS, weeklyReminderICS } from '../lib/reminder';
+import { daysSince, sendICS, weeklyReminderICS } from '../lib/reminder';
 
 export function WeightEntry() {
   const weights = useBodyWeights();
@@ -32,7 +32,7 @@ export function WeightEntry() {
       minute: 0,
       url: location.href.split('#')[0] + '#/dashboard',
     });
-    downloadICS(ics, 'weekly-weigh-in.ics');
+    sendICS(ics, 'weekly-weigh-in.ics');
   };
 
   return (

@@ -72,6 +72,20 @@ export function eventsICS(events: CalEvent[], leadMin: number, now = new Date())
   return lines.join('\r\n');
 }
 
+/** A link that opens Google Calendar's "new event" page filled in; works from the home-screen app, where files can't be opened. */
+export function googleCalendarUrl(e: CalEvent): string {
+  const [y, mo, d] = e.date.split('-').map(Number);
+  const [h, mi] = e.time.split(':').map(Number);
+  const start = new Date(y, mo - 1, d, h, mi, 0);
+  const end = new Date(start.getTime() + DURATION_MIN[e.kind] * 60000);
+  const q = new URLSearchParams({ action: 'TEMPLATE', text: `${KIND_EMOJI[e.kind]} ${e.title}`, dates: `${stamp(start)}/${stamp(end)}` });
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  if (tz) q.set('ctz', tz);
+  if (e.repeat === 'daily') q.set('recur', 'RRULE:FREQ=DAILY');
+  else if (e.repeat?.length) q.set('recur', `RRULE:FREQ=WEEKLY;BYDAY=${[...e.repeat].sort().map((x) => DAY_CODES[x]).join(',')}`);
+  return `https://calendar.google.com/calendar/render?${q}`;
+}
+
 /**
  * Everything on the given days that has a time and still matters: open tasks, workouts not done yet,
  * meals still planned, reminders, and the habits due those days. With `recurHabits`, a habit

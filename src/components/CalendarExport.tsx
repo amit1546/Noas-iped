@@ -8,7 +8,7 @@ import {
   useWorkoutsBetween,
 } from '../db/queries';
 import type { ISODate } from '../db/schema';
-import { candidateEvents, eventsICS, KIND_EMOJI, type EventKind } from '../lib/calendarExport';
+import { candidateEvents, eventsICS, googleCalendarUrl, KIND_EMOJI, type EventKind } from '../lib/calendarExport';
 import { formatLong, rangeISO } from '../lib/dates';
 import { describeDays } from '../lib/habitText';
 import { KIND_COLORS } from '../lib/kinds';
@@ -130,6 +130,18 @@ function CalendarExportSheet({ open, date, onClose }: { open: boolean; date: ISO
                     <span className="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold text-white" style={{ background: color }}>
                       {KIND_LABEL[e.kind]}
                     </span>
+                    {isStandaloneApp() && (
+                      <a
+                        href={googleCalendarUrl(e)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(ev) => ev.stopPropagation()}
+                        aria-label={`הוסף את "${e.title}" ל־Google Calendar`}
+                        className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-muted"
+                      >
+                        <CalendarPlus size={18} />
+                      </a>
+                    )}
                   </label>
                 </li>
               );
@@ -138,7 +150,9 @@ function CalendarExportSheet({ open, date, onClose }: { open: boolean; date: ISO
         )}
 
         {isStandaloneApp() && (
-          <p className="text-center text-sm text-muted">בחלון שייפתח: "שמירה בקבצים". אחר כך פותחים את הקובץ ולוחצים "הוסף הכול".</p>
+          <p className="text-center text-sm text-muted">
+            בכפתור בכל שורה מוסיפים אירוע אחד דרך Google Calendar. הכפתור למטה שומר קובץ: "שמירה בקבצים", פותחים אותו ולוחצים "הוסף הכול".
+          </p>
         )}
         <Button className="w-full" onClick={send} disabled={chosen.length === 0}>
           <CalendarPlus size={18} /> הוסף ליומן ({chosen.length})

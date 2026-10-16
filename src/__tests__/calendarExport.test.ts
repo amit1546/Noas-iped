@@ -102,3 +102,14 @@ describe('what gets offered to the calendar', () => {
     expect(candidateEvents({ ...base, habits: [{ ...habit, createdAt: '2026-12-01' }] })).toHaveLength(0);
   });
 });
+
+describe('googleCalendarUrl', () => {
+  it('fills in title, local start/end and weekly repeat', async () => {
+    const { googleCalendarUrl } = await import('../lib/calendarExport');
+    const u = new URL(googleCalendarUrl({ uid: 'h', kind: 'habit', title: 'ריצה', date: '2026-10-18', time: '07:30', repeat: [0, 2] }));
+    expect(u.origin + u.pathname).toBe('https://calendar.google.com/calendar/render');
+    expect(u.searchParams.get('text')).toBe('🔁 ריצה');
+    expect(u.searchParams.get('dates')).toBe('20261018T073000/20261018T074500');
+    expect(u.searchParams.get('recur')).toBe('RRULE:FREQ=WEEKLY;BYDAY=SU,TU');
+  });
+});

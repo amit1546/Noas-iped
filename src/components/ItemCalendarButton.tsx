@@ -1,8 +1,8 @@
 import { CalendarPlus } from 'lucide-react';
 import { useState } from 'react';
-import { eventsICS, KIND_EMOJI, type CalEvent } from '../lib/calendarExport';
+import { eventsICS, googleCalendarUrl, KIND_EMOJI, type CalEvent } from '../lib/calendarExport';
 import { describeDays } from '../lib/habitText';
-import { isStandaloneApp, sendICS } from '../lib/reminder';
+import { isStandaloneApp, sendICS, shareICS } from '../lib/reminder';
 import { BottomSheet } from './BottomSheet';
 import { Button, IconButton, Segmented } from './ui';
 
@@ -42,22 +42,42 @@ export function ItemCalendarButton({ item }: { item: Item }) {
             <span className="font-medium">שעה</span>
             <input type="time" className="input w-auto" value={time} onChange={(e) => setTime(e.target.value)} aria-label="שעה ביומן" />
           </label>
-          <Segmented
-            value={String(lead)}
-            onChange={(v) => setLead(Number(v) as 0 | 10 | 30)}
-            options={[
-              { value: '0', label: 'בזמן' },
-              { value: '10', label: '10 דק׳ לפני' },
-              { value: '30', label: '30 דק׳ לפני' },
-            ]}
-          />
-          {isStandaloneApp() && (
-          <p className="text-center text-sm text-muted">בחלון שייפתח: "שמירה בקבצים". אחר כך פותחים את הקובץ ולוחצים "הוסף הכול".</p>
-        )}
-        <Button className="w-full" onClick={send} disabled={!time}>
-            <CalendarPlus size={18} /> הוסף ליומן
-          </Button>
-
+          {isStandaloneApp() ? (
+            <>
+              <a
+                className="btn w-full bg-blue-600 text-white"
+                href={googleCalendarUrl({ ...item, time: time || '09:00' })}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setOpen(false)}
+              >
+                <CalendarPlus size={18} /> הוסף ל־Google Calendar
+              </a>
+              <p className="text-center text-xs text-muted">נפתח בגוגל, לוחצים שם "שמירה". ההתראה לפי ברירת המחדל של היומן.</p>
+              <button
+                type="button"
+                className="w-full py-1 text-center text-sm text-muted underline"
+                onClick={() => shareICS(eventsICS([{ ...item, time: time || '09:00' }], lead), 'noas-journal.ics')}
+              >
+                שמירה כקובץ
+              </button>
+            </>
+          ) : (
+            <>
+              <Segmented
+                value={String(lead)}
+                onChange={(v) => setLead(Number(v) as 0 | 10 | 30)}
+                options={[
+                  { value: '0', label: 'בזמן' },
+                  { value: '10', label: '10 דק׳ לפני' },
+                  { value: '30', label: '30 דק׳ לפני' },
+                ]}
+              />
+              <Button className="w-full" onClick={send} disabled={!time}>
+                <CalendarPlus size={18} /> הוסף ליומן
+              </Button>
+            </>
+          )}
         </div>
       </BottomSheet>
     </>

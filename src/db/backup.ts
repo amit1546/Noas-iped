@@ -32,7 +32,8 @@ export async function exportBackup(database: JournalDB): Promise<BackupFile> {
 export function parseBackup(text: string): BackupFile {
   let parsed: unknown;
   try {
-    parsed = JSON.parse(text);
+    // Some apps add an invisible marker at the start of text files; JSON.parse can't read past it.
+    parsed = JSON.parse(text.replace(/^\uFEFF/, ''));
   } catch {
     throw new Error('הקובץ אינו קובץ JSON תקין');
   }

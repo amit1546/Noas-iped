@@ -51,6 +51,11 @@ describe('backup', () => {
     expect(await db.reminders.count()).toBe(0);
   });
 
+  it('reads a backup that starts with an invisible byte-order mark', () => {
+    const text = '\uFEFF' + JSON.stringify({ app: 'noas-journal', version: 1, exportedAt: '2026-01-01T00:00:00.000Z', data: {} });
+    expect(parseBackup(text).app).toBe('noas-journal');
+  });
+
   it('rejects files that are not journal backups', () => {
     expect(() => parseBackup('not json')).toThrow();
     expect(() => parseBackup('{"foo":1}')).toThrow('זה לא קובץ גיבוי של היומן');

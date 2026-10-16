@@ -60,7 +60,8 @@ export function SettingsPage() {
             <input
               ref={fileRef}
               type="file"
-              accept="application/json,.json"
+              // No file-type filter on purpose: on iPad/iPhone it greys out backups that arrived through
+              // WhatsApp or mail without a recognised type. The contents are checked after choosing.
               className="hidden"
               onChange={(e) => {
                 const f = e.target.files?.[0];

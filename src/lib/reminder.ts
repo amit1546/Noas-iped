@@ -108,18 +108,15 @@ export async function shareICS(text: string, filename: string): Promise<boolean>
   return true;
 }
 
+export const isStandaloneApp = isStandalone;
+
 /**
  * Hands a calendar file to the phone. In the installed app (home-screen mode) a plain download
- * doesn't open anywhere and the share sheet has no Calendar button, so open the file as a page:
- * iPhone then asks "add to Calendar". If that is blocked, fall back to the share sheet; in a
- * normal browser tab a download opens the same prompt directly.
+ * doesn't open anywhere and iPhone blocks opening the file as a page, so use the share sheet
+ * (Save to Files, then open the file to add it to Calendar); in a normal browser tab a download
+ * opens the "add to calendar" prompt directly.
  */
 export async function sendICS(text: string, filename: string): Promise<void> {
-  if (isStandalone()) {
-    // Must run before any await, while the tap is still fresh.
-    const win = window.open('data:text/calendar;charset=utf-8,' + encodeURIComponent(text), '_blank');
-    if (win) return;
-    if (await shareICS(text, filename)) return;
-  }
+  if (isStandalone() && (await shareICS(text, filename))) return;
   downloadICS(text, filename);
 }

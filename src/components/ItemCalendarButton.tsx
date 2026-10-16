@@ -2,7 +2,7 @@ import { CalendarPlus } from 'lucide-react';
 import { useState } from 'react';
 import { eventsICS, KIND_EMOJI, type CalEvent } from '../lib/calendarExport';
 import { describeDays } from '../lib/habitText';
-import { sendICS, shareICS } from '../lib/reminder';
+import { isStandaloneApp, sendICS } from '../lib/reminder';
 import { BottomSheet } from './BottomSheet';
 import { Button, IconButton, Segmented } from './ui';
 
@@ -51,16 +51,12 @@ export function ItemCalendarButton({ item }: { item: Item }) {
               { value: '30', label: '30 דק׳ לפני' },
             ]}
           />
-          <Button className="w-full" onClick={send} disabled={!time}>
+          {isStandaloneApp() && (
+          <p className="text-center text-sm text-muted">בחלון שייפתח: "שמירה בקבצים". אחר כך פותחים את הקובץ ולוחצים "הוסף הכול".</p>
+        )}
+        <Button className="w-full" onClick={send} disabled={!time}>
             <CalendarPlus size={18} /> הוסף ליומן
           </Button>
-          <button
-            type="button"
-            className="w-full py-1 text-center text-sm text-muted underline"
-            onClick={() => shareICS(eventsICS([{ ...item, time: time || '09:00' }], lead), 'noas-journal.ics')}
-          >
-            שמירה כקובץ
-          </button>
 
         </div>
       </BottomSheet>

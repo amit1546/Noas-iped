@@ -26,5 +26,6 @@ export function mergeGroup(group: FixedMeal[]): FixedMeal {
     calories: [first, ...rest].map((m) => m.calories).find((c) => c > 0) ?? 0,
     protein: [first, ...rest].map((m) => m.protein).find((p) => p > 0) ?? 0,
     active: group.some((m) => m.active),
+    details: group.map((m) => m.details).find((d) => d?.trim()),
   };
 }

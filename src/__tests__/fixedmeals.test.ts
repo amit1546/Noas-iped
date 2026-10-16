@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { fixedMealTypes, type FixedMeal } from '../db/schema';
 import { duplicateGroups, mergeGroup } from '../lib/fixedMeals';
-import { nutritionText } from '../lib/mealText';
+import { ingredientLines, mealTypeForTime, nutritionText } from '../lib/mealText';
 
 describe('fixed meal types', () => {
   it('falls back to the single type for meals saved before multi-type support', () => {
@@ -58,5 +58,28 @@ describe('duplicate fixed meals', () => {
     expect(merged.mealTypes).toEqual(['lunch', 'dinner']);
     expect(merged.calories).toBe(600);
     expect(merged.protein).toBe(25);
+  });
+});
+
+describe('meal details', () => {
+  it('splits ingredients one per line and drops blanks and bullets', () => {
+    expect(ingredientLines('חלב\n\n- בננה\n• חלבון\r\n  שיבולת שועל  ')).toEqual(['חלב', 'בננה', 'חלבון', 'שיבולת שועל']);
+    expect(ingredientLines(undefined)).toEqual([]);
+    expect(ingredientLines('  \n ')).toEqual([]);
+  });
+
+  it('keeps the first ingredients list when merging duplicates', () => {
+    const merged = mergeGroup([
+      meal({ id: 1, order: 1, details: '' }),
+      meal({ id: 2, order: 2, mealType: 'dinner', details: 'פסטה\nרוטב' }),
+    ]);
+    expect(merged.details).toBe('פסטה\nרוטב');
+  });
+
+  it('maps a time of day to a meal', () => {
+    expect(mealTypeForTime('07:30')).toBe('breakfast');
+    expect(mealTypeForTime('13:00')).toBe('lunch');
+    expect(mealTypeForTime('19:45')).toBe('dinner');
+    expect(mealTypeForTime('22:10')).toBe('snack');
   });
 });

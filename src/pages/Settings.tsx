@@ -1,4 +1,4 @@
-import { Check, Download, Moon, Settings as SettingsIcon, ShieldCheck, Smartphone, Sun, Target, Trash2, Upload } from 'lucide-react';
+import { Check, Download, Moon, Settings as SettingsIcon, ShieldCheck, Smartphone, Sun, Trash2, Upload } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { Button, Card, CardTitle, PageHeader, Segmented } from '../components/ui';
 import { db } from '../db/db';
@@ -6,7 +6,7 @@ import { clearAll, exportBackup, importBackup, parseBackup, saveBackup } from '.
 import { formatShort, todayISO } from '../lib/dates';
 import { updateSettings, useSettings } from '../db/queries';
 import { ACCENT_PRESETS, BACKGROUND_PRESETS } from '../lib/appearance';
-import type { Settings, ThemePref } from '../db/schema';
+import type { ThemePref } from '../db/schema';
 
 export function SettingsPage() {
   const settings = useSettings();
@@ -44,83 +44,6 @@ export function SettingsPage() {
       <PageHeader title="הגדרות" accent="slate" icon={<SettingsIcon />} />
 
       <div className="grid gap-5 lg:grid-cols-2">
-        <Card>
-          <CardTitle title="יעדים" accent="sky" icon={<Target size={18} />} />
-          <div className="grid grid-cols-2 gap-3">
-            <GoalInput label="קלוריות ליום" field="calorieGoal" settings={settings} />
-            <GoalInput label="חלבון ליום (גר׳)" field="proteinGoal" settings={settings} />
-          </div>
-        </Card>
-
-        <Card className="lg:col-span-2">
-          <CardTitle title="מראה" icon={settings.theme === 'dark' ? <Moon size={18} /> : <Sun size={18} />} />
-          <div className="space-y-5">
-            <Segmented<ThemePref>
-              value={settings.theme}
-              onChange={(theme) => updateSettings({ theme })}
-              options={[
-                { value: 'system', label: 'אוטומטי' },
-                { value: 'light', label: '☀️ בהיר' },
-                { value: 'dark', label: '🌙 כהה' },
-              ]}
-            />
-            <div>
-              <p className="label">צבע ראשי</p>
-              <div className="flex flex-wrap gap-3" role="group" aria-label="צבע ראשי">
-                {ACCENT_PRESETS.map((p) => {
-                  const on = settings.accent === p.id;
-                  return (
-                    <button
-                      key={p.id}
-                      onClick={() => updateSettings({ accent: p.id })}
-                      aria-pressed={on}
-                      aria-label={`צבע ${p.label}`}
-                      title={p.label}
-                      className="grid h-12 w-12 place-items-center rounded-full text-white transition active:scale-90"
-                      style={{
-                        background: p.swatch,
-                        boxShadow: on ? `0 0 0 3px rgb(var(--surface)), 0 0 0 5px ${p.swatch}` : 'none',
-                      }}
-                    >
-                      {on && <Check size={22} strokeWidth={3} />}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-            <div>
-              <p className="label">צבע רקע</p>
-              <div className="flex flex-wrap gap-3" role="group" aria-label="צבע רקע">
-                {BACKGROUND_PRESETS.map((p) => {
-                  const on = settings.background === p.id;
-                  return (
-                    <button
-                      key={p.id}
-                      onClick={() => updateSettings({ background: p.id })}
-                      aria-pressed={on}
-                      aria-label={`רקע ${p.label}`}
-                      className={`flex min-w-[84px] flex-col items-center gap-1.5 rounded-2xl border-2 p-2.5 transition active:scale-95 ${
-                        on ? 'border-blue-600' : 'border-line'
-                      }`}
-                    >
-                      <span
-                        className="grid h-11 w-16 place-items-center rounded-xl border border-black/10"
-                        style={{ background: `rgb(${(dark ? p.dark : p.light).canvas})` }}
-                      >
-                        <span
-                          className="h-5 w-10 rounded-md border border-black/10"
-                          style={{ background: `rgb(${(dark ? p.dark : p.light).surface})` }}
-                        />
-                      </span>
-                      <span className="text-sm font-semibold">{p.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        </Card>
-
         <Card className="lg:col-span-2">
           <CardTitle title="גיבוי והעברה למכשיר אחר" accent="sky" icon={<ShieldCheck size={18} />} />
           <p className="mb-4 text-sm text-muted">
@@ -156,6 +79,70 @@ export function SettingsPage() {
           )}
         </Card>
 
+        <Card className="p-4">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <h2 className="flex items-center gap-2 font-bold">
+              {settings.theme === 'dark' ? <Moon size={18} /> : <Sun size={18} />} מראה
+            </h2>
+            <Segmented<ThemePref>
+              value={settings.theme}
+              onChange={(theme) => updateSettings({ theme })}
+              options={[
+                { value: 'system', label: 'אוטומטי' },
+                { value: 'light', label: 'בהיר' },
+                { value: 'dark', label: 'כהה' },
+              ]}
+            />
+          </div>
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-2" role="group" aria-label="צבע ראשי">
+              <span className="w-9 text-sm text-muted">צבע</span>
+              {ACCENT_PRESETS.map((p) => {
+                const on = settings.accent === p.id;
+                return (
+                  <button
+                    key={p.id}
+                    onClick={() => updateSettings({ accent: p.id })}
+                    aria-pressed={on}
+                    aria-label={`צבע ${p.label}`}
+                    title={p.label}
+                    className="grid h-8 w-8 place-items-center rounded-full text-white transition active:scale-90"
+                    style={{
+                      background: p.swatch,
+                      boxShadow: on ? `0 0 0 2px rgb(var(--surface)), 0 0 0 4px ${p.swatch}` : 'none',
+                    }}
+                  >
+                    {on && <Check size={16} strokeWidth={3} />}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="flex flex-wrap items-center gap-2" role="group" aria-label="צבע רקע">
+              <span className="w-9 text-sm text-muted">רקע</span>
+              {BACKGROUND_PRESETS.map((p) => {
+                const on = settings.background === p.id;
+                const tone = dark ? p.dark : p.light;
+                return (
+                  <button
+                    key={p.id}
+                    onClick={() => updateSettings({ background: p.id })}
+                    aria-pressed={on}
+                    aria-label={`רקע ${p.label}`}
+                    title={p.label}
+                    className="grid h-8 w-8 place-items-center rounded-full border border-black/15 transition active:scale-90"
+                    style={{
+                      background: `rgb(${tone.canvas})`,
+                      boxShadow: on ? '0 0 0 2px rgb(var(--surface)), 0 0 0 4px rgb(var(--a-600))' : 'none',
+                    }}
+                  >
+                    <span className="h-3.5 w-3.5 rounded-full border border-black/10" style={{ background: `rgb(${tone.surface})` }} />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </Card>
+
         <Card>
           <CardTitle title="התקנה כאפליקציה" accent="blue" icon={<Smartphone size={18} />} />
           <ol className="list-inside list-decimal space-y-1 text-sm text-muted">
@@ -173,27 +160,5 @@ export function SettingsPage() {
         </Card>
       </div>
     </>
-  );
-}
-
-type GoalField = 'calorieGoal' | 'proteinGoal';
-
-function GoalInput({ label, field, settings }: { label: string; field: GoalField; settings: Settings }) {
-  return (
-    <label>
-      <span className="label">{label}</span>
-      <input
-        key={settings[field]}
-        className="input"
-        type="number"
-        inputMode="numeric"
-        defaultValue={settings[field]}
-        onBlur={(e) => {
-          const n = Math.round(Number(e.target.value));
-          if (n > 0 && n !== settings[field]) updateSettings({ [field]: n });
-          else e.target.value = String(settings[field]);
-        }}
-      />
-    </label>
   );
 }

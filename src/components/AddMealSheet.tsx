@@ -1,17 +1,10 @@
 import { useEffect, useState } from 'react';
 import { addMeal, saveFixedMeal } from '../db/queries';
 import { MEAL_TYPE_LABELS, MEAL_TYPE_ORDER, type MealType } from '../db/schema';
+import { mealTypeForTime } from '../lib/mealText';
 import { BottomSheet } from './BottomSheet';
 import { OptionalTime } from './OptionalTime';
 import { Button, Segmented } from './ui';
-
-function defaultMealType(time?: string): MealType {
-  const h = time ? Number(time.slice(0, 2)) : new Date().getHours();
-  if (h < 11) return 'breakfast';
-  if (h < 16) return 'lunch';
-  if (h < 21) return 'dinner';
-  return 'snack';
-}
 
 export function AddMealSheet({
   open,
@@ -29,11 +22,13 @@ export function AddMealSheet({
   const [time, setTime] = useState('');
   const [day, setDay] = useState(date);
   const [typeTouched, setTypeTouched] = useState(false);
-  const [mealType, setMealType] = useState<MealType>(defaultMealType);
+  const [mealType, setMealType] = useState<MealType>(mealTypeForTime);
   const [calories, setCalories] = useState('');
   const [protein, setProtein] = useState('');
   const [saveAsFixed, setSaveAsFixed] = useState(false);
   const [extraTypes, setExtraTypes] = useState<MealType[]>([]);
+  const [details, setDetails] = useState('');
+  const [showDetails, setShowDetails] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -42,7 +37,9 @@ export function AddMealSheet({
       setProtein('');
       setSaveAsFixed(false);
       setExtraTypes([]);
-      setMealType(defaultMealType());
+      setDetails('');
+      setShowDetails(false);
+      setMealType(mealTypeForTime());
       setPlan(initialPlan);
       setTime('');
       setDay(date);
@@ -58,7 +55,7 @@ export function AddMealSheet({
     let fixedMealId: number | undefined;
     if (saveAsFixed) {
       const types = MEAL_TYPE_ORDER.filter((t) => t === mealType || extraTypes.includes(t));
-      fixedMealId = await saveFixedMeal({ name: name.trim(), mealType, mealTypes: types, calories: cal, protein: prot, active: true });
+      fixedMealId = await saveFixedMeal({ name: name.trim(), mealType, mealTypes: types, calories: cal, protein: prot, active: true, details: details.trim() || undefined });
     }
     await addMeal({
       date: plan ? day : date,
@@ -67,6 +64,7 @@ export function AddMealSheet({
       calories: cal,
       protein: prot,
       fixedMealId,
+      details: details.trim() || undefined,
       planned: plan || undefined,
       fromPlan: plan || undefined,
       time: time || undefined,
@@ -135,6 +133,18 @@ export function AddMealSheet({
             />
           </div>
         )}
+        {showDetails ? (
+          <div>
+            <label className="label" htmlFor="meal-details">
+              פירוט — מרכיבים, כל אחד בשורה
+            </label>
+            <textarea id="meal-details" className="input min-h-[96px]" value={details} onChange={(e) => setDetails(e.target.value)} />
+          </div>
+        ) : (
+          <button type="button" onClick={() => setShowDetails(true)} className="chip text-muted hover:text-ink">
+            + פירוט ומרכיבים
+          </button>
+        )}
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium text-muted">שעה:</span>
           <OptionalTime
@@ -143,7 +153,7 @@ export function AddMealSheet({
             onChange={(v) => {
               setTime(v);
               // Follow the chosen time unless the meal type was picked by hand.
-              if (v && !typeTouched) setMealType(defaultMealType(v));
+              if (v && !typeTouched) setMealType(mealTypeForTime(v));
             }}
           />
         </div>

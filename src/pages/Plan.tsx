@@ -1,17 +1,18 @@
-import { Bell, CalendarClock, CalendarRange, Check, ChevronDown, Dumbbell, Flame, ListChecks, Pencil, Plus, Settings2, X } from 'lucide-react';
+import { Bell, CalendarClock, CalendarRange, Check, Dumbbell, Flame, ListChecks, Pencil, Plus, Settings2 } from 'lucide-react';
 import { useState } from 'react';
 import { AddMealSheet } from '../components/AddMealSheet';
 import { DateNav } from '../components/DateNav';
 import { FixedMealsManager } from '../components/FixedMealsManager';
 import { HabitChecklist } from '../components/HabitChecklist';
 import { HabitForm } from '../components/HabitForm';
+import { MealIdeas } from '../components/MealIdeas';
 import { PlannedMeals } from '../components/PlannedMeals';
 import { ReminderList } from '../components/ReminderList';
 import { TaskList } from '../components/TaskList';
 import { WorkoutList } from '../components/WorkoutList';
 import { Card, CardTitle, PageHeader } from '../components/ui';
-import { planFixedMeal, useFixedMeals, useMeals, useSettings } from '../db/queries';
-import { fixedMealTypes, MEAL_TYPE_LABELS, type FixedMeal, type Habit } from '../db/schema';
+import { useFixedMeals, useMeals, useSettings } from '../db/queries';
+import type { Habit } from '../db/schema';
 import { useSelectedDate } from '../lib/selectedDate';
 import { sumMeals } from '../lib/stats';
 
@@ -25,7 +26,6 @@ export function Plan() {
   const [habitForm, setHabitForm] = useState<{ open: boolean; habit?: Habit; name?: string }>({ open: false });
   const [planningMeal, setPlanningMeal] = useState(false);
   const [manageMeals, setManageMeals] = useState(false);
-  const [picking, setPicking] = useState<FixedMeal | null>(null);
 
   const plannedCalories = meals.filter((m) => m.planned).reduce((a, m) => a + m.calories, 0);
   const dayCalories = sumMeals(meals).calories + plannedCalories;
@@ -67,60 +67,9 @@ export function Plan() {
               </div>
             }
           />
-          {fixedMeals.length === 0 && (
-            <button
-              onClick={() => setManageMeals(true)}
-              className="mb-3 w-full rounded-2xl border-2 border-dashed border-line py-3 text-sm font-semibold text-muted hover:text-ink"
-            >
-              + הגדרת ארוחות קבועות לתכנון מהיר
-            </button>
-          )}
-          {fixedMeals.length > 0 && (
-            <div className="mb-3">
-              <p className="mb-1.5 text-xs font-medium text-muted">הוספה מהירה מהארוחות הקבועות:</p>
-              <div className="flex flex-wrap gap-1.5">
-                {fixedMeals.map((fm) => {
-                  const types = fixedMealTypes(fm);
-                  const several = types.length > 1;
-                  return (
-                    <button
-                      key={fm.id}
-                      onClick={() => (several ? setPicking(picking?.id === fm.id ? null : fm) : planFixedMeal(fm, date))}
-                      className={`chip text-ink hover:border-sky-400 ${picking?.id === fm.id ? 'border-sky-500 bg-sky-50 dark:bg-sky-500/10' : ''}`}
-                      aria-label={`תכנן ${fm.name}`}
-                      aria-expanded={several ? picking?.id === fm.id : undefined}
-                    >
-                      <Plus size={14} className="text-sky-600" /> {fm.name}
-                      {several && <ChevronDown size={14} className="text-muted" />}
-                      {fm.calories > 0 && <span className="text-xs text-muted">{fm.calories}</span>}
-                    </button>
-                  );
-                })}
-              </div>
-              {picking && (
-                <div className="mt-2 flex flex-wrap items-center gap-2 rounded-2xl bg-sky-50 p-3 dark:bg-sky-500/10">
-                  <span className="font-semibold">{picking.name} — לאיזה זמן?</span>
-                  {fixedMealTypes(picking).map((t) => (
-                    <button
-                      key={t}
-                      aria-label={`${picking.name} ל${MEAL_TYPE_LABELS[t]}`}
-                      onClick={() => {
-                        planFixedMeal(picking, date, undefined, t);
-                        setPicking(null);
-                      }}
-                      className="chip border-sky-300 bg-surface font-semibold text-sky-700 dark:text-sky-300"
-                    >
-                      {MEAL_TYPE_LABELS[t]}
-                    </button>
-                  ))}
-                  <button aria-label="ביטול" onClick={() => setPicking(null)} className="ms-auto p-1 text-muted hover:text-ink">
-                    <X size={18} />
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
           <PlannedMeals meals={meals} hint={false} />
+          <p className="mb-2 mt-5 text-sm font-bold text-muted">מה לאכול? רעיונות לפי זמן</p>
+          <MealIdeas meals={fixedMeals} date={date} onManage={() => setManageMeals(true)} />
           {dayCalories > 0 && (
             <p className={`mt-3 text-sm font-medium ${dayCalories > calorieGoal ? 'text-red-500' : 'text-muted'}`}>
               סה״כ ליום: {dayCalories.toLocaleString('he-IL')} מתוך {calorieGoal.toLocaleString('he-IL')} קל׳

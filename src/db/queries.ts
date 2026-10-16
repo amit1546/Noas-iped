@@ -186,6 +186,7 @@ export async function toggleFixedMealEaten(fm: FixedMeal, date: ISODate): Promis
     calories: fm.calories,
     protein: fm.protein,
     fixedMealId: fm.id,
+    details: fm.details,
   });
   return true;
 }
@@ -203,6 +204,7 @@ export function planFixedMeal(fm: FixedMeal, date: ISODate, time?: string, mealT
     fixedMealId: fm.id,
     planned: true,
     fromPlan: true,
+    details: fm.details,
     time,
   });
 }

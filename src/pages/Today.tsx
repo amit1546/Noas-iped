@@ -20,6 +20,7 @@ import { Link } from 'react-router-dom';
 import { useCelebrate } from '../components/Confetti';
 import { CalorieBar } from '../components/CalorieBar';
 import { WorkBadge } from '../components/WorkBadge';
+import { MealDetails } from '../components/MealDetails';
 import { Card, CheckCircle } from '../components/ui';
 import { exportBackup, saveBackup } from '../db/backup';
 import { db } from '../db/db';
@@ -63,6 +64,8 @@ interface Item {
   toggle: () => Promise<unknown>;
   /** A note to remember: nothing to check off, and it doesn't count toward "all done". */
   note?: boolean;
+  /** What's in a meal, one ingredient per line */
+  details?: string;
 }
 
 const KIND: Record<Kind, { label: string; color: string; icon: ReactNode }> = {
@@ -136,6 +139,7 @@ export function Today() {
           kind: 'meal' as const,
           title: m.name,
           sub: nutritionText(m) || undefined,
+          details: m.details,
           time: m.time,
           done: !m.planned,
           toggle: () => updateMeal(m.id!, { planned: !m.planned }),
@@ -347,6 +351,7 @@ function Section({ title, items, onToggle }: { title: string; items: Item[]; onT
                 </span>
               </button>
               )}
+              <MealDetails details={item.details} className="px-3 pt-1.5 pb-0.5" />
             </motion.li>
           );
         })}

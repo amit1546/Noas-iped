@@ -3,11 +3,11 @@ import { useState } from 'react';
 import { deleteFixedMeal, mergeFixedMeals, moveFixedMeal, saveFixedMeal, useFixedMeals } from '../db/queries';
 import { fixedMealTypes, MEAL_TYPE_LABELS, MEAL_TYPE_ORDER, type FixedMeal, type MealType } from '../db/schema';
 import { duplicateGroups, mergeGroup } from '../lib/fixedMeals';
-import { nutritionText } from '../lib/mealText';
+import { ingredientLines, nutritionText } from '../lib/mealText';
 import { BottomSheet } from './BottomSheet';
 import { Button, EmptyState, IconButton } from './ui';
 
-const EMPTY = { name: '', mealTypes: ['breakfast'] as MealType[], calories: '', protein: '' };
+const EMPTY = { name: '', mealTypes: ['breakfast'] as MealType[], calories: '', protein: '', details: '' };
 
 export function FixedMealsManager({ open, onClose }: { open: boolean; onClose: () => void }) {
   const fixedMeals = useFixedMeals();
@@ -17,7 +17,7 @@ export function FixedMealsManager({ open, onClose }: { open: boolean; onClose: (
 
   const startEdit = (m: FixedMeal) => {
     setEditingId(m.id);
-    setForm({ name: m.name, mealTypes: fixedMealTypes(m), calories: String(m.calories || ''), protein: String(m.protein || '') });
+    setForm({ name: m.name, mealTypes: fixedMealTypes(m), calories: String(m.calories || ''), protein: String(m.protein || ''), details: m.details ?? '' });
   };
 
   const reset = () => {
@@ -36,6 +36,7 @@ export function FixedMealsManager({ open, onClose }: { open: boolean; onClose: (
       mealTypes: form.mealTypes,
       calories: Math.round(Number(form.calories) || 0),
       protein: Math.round(Number(form.protein) || 0),
+      details: form.details.trim() || undefined,
       active: existing?.active ?? true,
     });
     reset();
@@ -122,6 +123,17 @@ export function FixedMealsManager({ open, onClose }: { open: boolean; onClose: (
             aria-label="חלבון"
           />
         </div>
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-muted" htmlFor="fixed-details">
+            פירוט — מרכיבים, כל אחד בשורה
+          </label>
+          <textarea
+            id="fixed-details"
+            className="input min-h-[88px] bg-surface"
+            value={form.details}
+            onChange={(e) => setForm({ ...form, details: e.target.value })}
+          />
+        </div>
         <div className="flex gap-2">
           <Button accent="sky" type="submit" className="flex-1" disabled={!form.name.trim()}>
             {editingId ? 'שמירה' : 'הוספה'}
@@ -143,7 +155,13 @@ export function FixedMealsManager({ open, onClose }: { open: boolean; onClose: (
               <div className="flex-1">
                 <p className="font-semibold">{m.name}</p>
                 <p className="text-xs text-muted">
-                  {[fixedMealTypes(m).map((t) => MEAL_TYPE_LABELS[t]).join(' / '), nutritionText(m, true)].filter(Boolean).join(' · ')}
+                  {[
+                    fixedMealTypes(m).map((t) => MEAL_TYPE_LABELS[t]).join(' / '),
+                    nutritionText(m, true),
+                    ingredientLines(m.details).length ? `${ingredientLines(m.details).length} מרכיבים` : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
                 </p>
               </div>
               <label className="flex cursor-pointer items-center gap-1 px-1 text-xs text-muted">

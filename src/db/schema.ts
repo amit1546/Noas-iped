@@ -77,6 +77,8 @@ export interface FixedMeal {
   protein: number;
   active: boolean;
   order: number;
+  /** What's in it, one ingredient per line */
+  details?: string;
 }
 
 export interface Meal {
@@ -93,6 +95,8 @@ export interface Meal {
   time?: string;
   /** Added through planning; stays on the day's checklist after it's eaten. */
   fromPlan?: boolean;
+  /** What's in it, one ingredient per line */
+  details?: string;
 }
 
 export interface Reminder {

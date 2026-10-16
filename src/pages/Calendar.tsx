@@ -203,7 +203,7 @@ export function CalendarPage() {
                 >
                   {fromISO(d).getDate()}
                 </span>
-                <span className="flex h-3 items-center gap-1">{s && <Dots s={s} />}</span>
+                <span className="flex min-h-[12px] max-w-full flex-wrap items-center justify-center gap-1 px-1">{s && <Dots s={s} />}</span>
               </button>
             );
           })}
@@ -237,7 +237,7 @@ function Dots({ s }: { s: DaySummary }) {
       {dots.map((d, i) => (
         <span
           key={i}
-          className="h-3 w-3 rounded-full"
+          className="h-2.5 w-2.5 rounded-full sm:h-3 sm:w-3"
           style={{ background: d.filled ? d.color : 'transparent', border: `2px solid ${d.color}` }}
         />
       ))}

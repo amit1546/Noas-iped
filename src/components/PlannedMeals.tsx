@@ -6,6 +6,7 @@ import { nutritionText } from '../lib/mealText';
 import { MealDetails } from './MealDetails';
 import { OptionalTime } from './OptionalTime';
 import { IconButton } from './ui';
+import { ItemCalendarButton } from './ItemCalendarButton';
 
 export const byMealTime = (a: Meal, b: Meal) =>
   (a.time ?? '99:99').localeCompare(b.time ?? '99:99') ||
@@ -52,6 +53,7 @@ export function PlannedMeals({ meals, hint = true }: { meals: Meal[]; hint?: boo
             >
               <Check size={16} /> אכלתי
             </button>
+            <ItemCalendarButton item={{ uid: `meal-${m.id}`, kind: 'meal', title: m.name, date: m.date, time: m.time }} />
             <IconButton label="הסר מהתכנון" onClick={() => deleteMeal(m.id!)}>
               <Trash2 size={18} />
             </IconButton>

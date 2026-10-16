@@ -8,6 +8,7 @@ import { ACCENT_600 } from '../lib/appearance';
 import { useCelebrate } from './Confetti';
 import { OptionalTime } from './OptionalTime';
 import { CheckCircle, IconButton } from './ui';
+import { ItemCalendarButton } from './ItemCalendarButton';
 
 const COLOR = ACCENT_600;
 
@@ -87,6 +88,7 @@ export function WorkoutList({ date }: { date: ISODate }) {
                       {missed && <span className="ms-2 text-xs font-semibold text-red-500">התפספס</span>}
                     </span>
                   </button>
+                  {!done && <ItemCalendarButton item={{ uid: `workout-${w.id}`, kind: 'workout', title: w.title || 'אימון', date: w.date, time: w.time }} />}
                   <IconButton label="מחק אימון" onClick={() => deleteWorkout(w.id!)}>
                     <Trash2 size={18} />
                   </IconButton>

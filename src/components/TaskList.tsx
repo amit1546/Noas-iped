@@ -7,6 +7,7 @@ import { shiftISO, todayISO } from '../lib/dates';
 import { ACCENT_500 } from '../lib/appearance';
 import { OptionalTime } from './OptionalTime';
 import { CheckCircle, IconButton } from './ui';
+import { ItemCalendarButton } from './ItemCalendarButton';
 
 const PRIORITY_COLOR: Record<Priority, string> = { high: '#ef4444', medium: '#f59e0b', low: '#94a3b8' };
 const PRIORITY_RANK: Record<Priority, number> = { high: 0, medium: 1, low: 2 };
@@ -114,6 +115,7 @@ function TaskRow({ task, canCarry }: { task: Task; canCarry: boolean }) {
           <ArrowLeftCircle size={18} />
         </IconButton>
       )}
+      {!task.done && <ItemCalendarButton item={{ uid: `task-${task.id}`, kind: 'task', title: task.title, date: task.date, time: task.time }} />}
       <IconButton label="מחק משימה" onClick={() => deleteTask(task.id!)}>
         <Trash2 size={18} />
       </IconButton>

@@ -40,7 +40,7 @@ describe('calendar export', () => {
 
   it('puts an emoji for the kind in the title and escapes special characters', () => {
     const ics = eventsICS([ev({ title: 'חלב, ביצים; לחם' })], 0, NOW);
-    expect(ics).toContain('SUMMARY:✅ חלב\\, ביצים\; לחם');
+    expect(ics).toContain('SUMMARY:✅ חלב\\, ביצים\\; לחם');
   });
 
   it('keeps ids stable so sending again updates instead of duplicating', () => {

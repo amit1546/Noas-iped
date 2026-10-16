@@ -1,11 +1,13 @@
 import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { shiftISO } from '../lib/dates';
 import { deleteHabit, toggleHabit, useAllHabitLogs, useHabits } from '../db/queries';
 import type { Habit, ISODate, Weekday } from '../db/schema';
 import { describeDays } from '../lib/habitText';
 import { currentStreak, isScheduled } from '../lib/streaks';
 import { useCelebrate } from './Confetti';
 import { CheckCircle, IconButton } from './ui';
+import { ItemCalendarButton } from './ItemCalendarButton';
 
 /**
  * Every habit with its schedule (days and time) written on it, so you never have to
@@ -68,6 +70,14 @@ export function HabitChecklist({
           const done = due && dates.has(date);
           const streak = due ? currentStreak(h, dates, date) : 0;
 
+          // Added to the calendar as a repeating event, starting from the next day it is due.
+          const start = [0, 1, 2, 3, 4, 5, 6].map((n) => shiftISO(date, n)).find((d) => isScheduled(h, d)) ?? date;
+          const cal = (
+            <ItemCalendarButton
+              item={{ uid: `habit-${h.id}`, kind: 'habit', title: `${h.emoji} ${h.name}`, date: start, time: h.time, repeat: h.days.length ? h.days : 'daily' }}
+            />
+          );
+
           // Same layout in every state: [check] [icon] [name + week strip] [time]
           const body = (
             <>
@@ -94,6 +104,7 @@ export function HabitChecklist({
             return (
               <li key={h.id} className="flex min-h-[64px] items-center gap-3 rounded-2xl bg-canvas pe-1 ps-3">
                 {body}
+                {cal}
                 <IconButton label="עריכת הרגל" onClick={() => onEdit(h)}>
                   <Pencil size={18} />
                 </IconButton>
@@ -111,14 +122,15 @@ export function HabitChecklist({
               <li key={h.id} className="flex min-h-[64px] items-center gap-3 rounded-2xl bg-canvas px-3 opacity-55">
                 <span className="h-7 w-7 shrink-0 rounded-full border-2 border-dashed border-line" aria-hidden />
                 {body}
+                {cal}
               </li>
             );
           }
           return (
-            <li key={h.id}>
+            <li key={h.id} className="flex items-center gap-1">
               <button
                 onClick={() => onToggle(h.id!)}
-                className="flex min-h-[64px] w-full items-center gap-3 rounded-2xl border-2 px-3 text-start transition active:scale-[0.98]"
+                className="flex min-h-[64px] min-w-0 flex-1 items-center gap-3 rounded-2xl border-2 px-3 text-start transition active:scale-[0.98]"
                 style={{
                   borderColor: done ? h.color : 'transparent',
                   background: done ? `${h.color}14` : 'rgb(var(--canvas))',
@@ -127,6 +139,7 @@ export function HabitChecklist({
                 <CheckCircle checked={done} color={h.color} />
                 {body}
               </button>
+              {cal}
             </li>
           );
         })}

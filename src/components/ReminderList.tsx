@@ -1,10 +1,10 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { Bell, BellRing, Plus, Trash2 } from 'lucide-react';
+import { Bell, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { addReminder, deleteReminder, useReminders } from '../db/queries';
-import type { ISODate, Reminder } from '../db/schema';
+import type { ISODate } from '../db/schema';
 import { KIND_COLORS } from '../lib/kinds';
-import { oneOffReminderICS, sendICS } from '../lib/reminder';
+import { ItemCalendarButton } from './ItemCalendarButton';
 import { OptionalTime } from './OptionalTime';
 import { IconButton } from './ui';
 
@@ -22,9 +22,6 @@ export function ReminderList({ date }: { date: ISODate }) {
     setText('');
     setTime('');
   };
-
-  const addToPhone = (r: Reminder) =>
-    sendICS(oneOffReminderICS({ title: r.text, date: r.date, time: r.time }), 'reminder.ics');
 
   return (
     <div>
@@ -74,9 +71,7 @@ export function ReminderList({ date }: { date: ISODate }) {
                   )}
                   {r.text}
                 </span>
-                <IconButton label={`הוסף את "${r.text}" ליומן הטלפון עם התראה`} onClick={() => addToPhone(r)}>
-                  <BellRing size={18} />
-                </IconButton>
+                <ItemCalendarButton item={{ uid: `reminder-${r.id}`, kind: 'reminder', title: r.text, date: r.date, time: r.time }} />
                 <IconButton label="מחק תזכורת" onClick={() => deleteReminder(r.id!)}>
                   <Trash2 size={18} />
                 </IconButton>

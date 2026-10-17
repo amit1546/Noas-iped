@@ -1,4 +1,5 @@
 import { useLiveQuery } from 'dexie-react-hooks';
+import { defaultAmount, scaleNutrition, unitOf } from '../lib/amount';
 import { mergeGroup } from '../lib/fixedMeals';
 import { db } from './db';
 import {
@@ -179,34 +180,38 @@ export async function toggleFixedMealEaten(fm: FixedMeal, date: ISODate): Promis
     await db.meals.delete(existing.id!);
     return false;
   }
-  await db.meals.add({
-    date,
-    mealType: fm.mealType,
-    name: fm.name,
-    calories: fm.calories,
-    protein: fm.protein,
-    fixedMealId: fm.id,
-    details: fm.details,
-  });
+  await db.meals.add({ ...mealFromFixed(fm, fm.mealType), date, fixedMealId: fm.id });
   return true;
 }
 
 export const addMeal = (m: Omit<Meal, 'id'>) => db.meals.add(m);
 export const updateMeal = (id: number, patch: Partial<Meal>) => db.meals.update(id, patch);
 
-export function planFixedMeal(fm: FixedMeal, date: ISODate, time?: string, mealType: MealType = fm.mealType) {
-  return db.meals.add({
-    date,
+/** A meal with the fixed meal's values for its default amount (100 g, or one serving). */
+function mealFromFixed(fm: FixedMeal, mealType: MealType) {
+  const unit = unitOf(fm);
+  const amount = defaultAmount(unit);
+  return {
     mealType,
     name: fm.name,
-    calories: fm.calories,
-    protein: fm.protein,
-    fixedMealId: fm.id,
-    planned: true,
-    fromPlan: true,
+    ...scaleNutrition(fm, unit, amount),
     details: fm.details,
-    time,
-  });
+    unit,
+    amount,
+    perCalories: fm.calories,
+    perProtein: fm.protein,
+  };
+}
+
+export function planFixedMeal(fm: FixedMeal, date: ISODate, time?: string, mealType: MealType = fm.mealType) {
+  return db.meals.add({ ...mealFromFixed(fm, mealType), date, fixedMealId: fm.id, planned: true, fromPlan: true, time });
+}
+
+/** Changes how much was eaten and recalculates calories and protein from the per-unit values. */
+export async function updateMealAmount(m: Meal, amount: number) {
+  if (!m.unit || !(amount > 0)) return;
+  const per = { calories: m.perCalories ?? m.calories, protein: m.perProtein ?? m.protein };
+  await db.meals.update(m.id!, { amount, ...scaleNutrition(per, m.unit, amount) });
 }
 export const deleteMeal = (id: number) => db.meals.delete(id);
 

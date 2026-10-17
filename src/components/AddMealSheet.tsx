@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { addMeal, saveFixedMeal } from '../db/queries';
-import { MEAL_TYPE_LABELS, MEAL_TYPE_ORDER, type MealType } from '../db/schema';
+import { MEAL_TYPE_LABELS, MEAL_TYPE_ORDER, type MealType, type MealUnit } from '../db/schema';
+import { amountSuffix, scaleNutrition } from '../lib/amount';
 import { mealTypeForTime } from '../lib/mealText';
 import { BottomSheet } from './BottomSheet';
 import { OptionalTime } from './OptionalTime';
@@ -25,6 +26,8 @@ export function AddMealSheet({
   const [mealType, setMealType] = useState<MealType>(mealTypeForTime);
   const [calories, setCalories] = useState('');
   const [protein, setProtein] = useState('');
+  const [unit, setUnit] = useState<MealUnit>('serving');
+  const [amount, setAmount] = useState('100');
   const [saveAsFixed, setSaveAsFixed] = useState(false);
   const [extraTypes, setExtraTypes] = useState<MealType[]>([]);
   const [details, setDetails] = useState('');
@@ -35,6 +38,8 @@ export function AddMealSheet({
       setName('');
       setCalories('');
       setProtein('');
+      setUnit('serving');
+      setAmount('100');
       setSaveAsFixed(false);
       setExtraTypes([]);
       setDetails('');
@@ -50,12 +55,15 @@ export function AddMealSheet({
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
-    const cal = Math.round(Number(calories) || 0);
-    const prot = Math.round(Number(protein) || 0);
+    // The numbers typed are per serving or per 100 g; the meal keeps the total for the amount.
+    const perCal = Number(calories) || 0;
+    const perProt = Number(protein) || 0;
+    const qty = unit === 'per100' ? Number(amount) || 100 : 1;
+    const { calories: cal, protein: prot } = scaleNutrition({ calories: perCal, protein: perProt }, unit, qty);
     let fixedMealId: number | undefined;
     if (saveAsFixed) {
       const types = MEAL_TYPE_ORDER.filter((t) => t === mealType || extraTypes.includes(t));
-      fixedMealId = await saveFixedMeal({ name: name.trim(), mealType, mealTypes: types, calories: cal, protein: prot, active: true, details: details.trim() || undefined });
+      fixedMealId = await saveFixedMeal({ name: name.trim(), mealType, mealTypes: types, calories: Math.round(perCal), protein: Math.round(perProt), active: true, details: details.trim() || undefined, unit });
     }
     await addMeal({
       date: plan ? day : date,
@@ -63,6 +71,10 @@ export function AddMealSheet({
       name: name.trim(),
       calories: cal,
       protein: prot,
+      unit,
+      amount: qty,
+      perCalories: Math.round(perCal),
+      perProtein: Math.round(perProt),
       fixedMealId,
       details: details.trim() || undefined,
       planned: plan || undefined,
@@ -105,6 +117,15 @@ export function AddMealSheet({
           }}
           options={MEAL_TYPE_ORDER.map((t) => ({ value: t, label: MEAL_TYPE_LABELS[t] }))}
         />
+        <Segmented<MealUnit>
+          accent="sky"
+          value={unit}
+          onChange={setUnit}
+          options={[
+            { value: 'serving', label: 'ערכים למנה' },
+            { value: 'per100', label: `ערכים ל־100 ${amountSuffix('per100', mealType === 'drink')}` },
+          ]}
+        />
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="label" htmlFor="meal-cal">
@@ -119,6 +140,14 @@ export function AddMealSheet({
             <input id="meal-protein" className="input" type="number" inputMode="numeric" value={protein} onChange={(e) => setProtein(e.target.value)} />
           </div>
         </div>
+        {unit === 'per100' && (
+          <div>
+            <label className="label" htmlFor="meal-amount">
+              כמות ({amountSuffix('per100', mealType === 'drink')})
+            </label>
+            <input id="meal-amount" className="input" type="number" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} />
+          </div>
+        )}
         {plan && (
           <div>
             <label className="label" htmlFor="meal-date">

@@ -50,6 +50,7 @@ import { KIND_COLORS } from '../lib/kinds';
 import { nutritionText } from '../lib/mealText';
 import { quoteOfDay } from '../lib/quotes';
 import { sumMeals } from '../lib/stats';
+import { amountText } from '../lib/amount';
 import { daysSince } from '../lib/reminder';
 import { isScheduled } from '../lib/streaks';
 
@@ -139,7 +140,7 @@ export function Today() {
           key: `m${m.id}`,
           kind: 'meal' as const,
           title: m.name,
-          sub: nutritionText(m) || undefined,
+          sub: [amountText(m), nutritionText(m)].filter(Boolean).join(' · ') || undefined,
           details: m.details,
           time: m.time,
           done: !m.planned,

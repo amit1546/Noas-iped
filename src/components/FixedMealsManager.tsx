@@ -1,13 +1,14 @@
-import { ChevronDown, ChevronUp, Pencil, Trash2 } from 'lucide-react';
+import { Pencil, Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import { deleteFixedMeal, mergeFixedMeals, moveFixedMeal, saveFixedMeal, useFixedMeals } from '../db/queries';
-import { fixedMealTypes, MEAL_TYPE_LABELS, MEAL_TYPE_ORDER, type FixedMeal, type MealType } from '../db/schema';
+import { deleteFixedMeal, mergeFixedMeals, saveFixedMeal, useFixedMeals } from '../db/queries';
+import { fixedMealTypes, MEAL_TYPE_LABELS, MEAL_TYPE_ORDER, type FixedMeal, type MealType, type MealUnit } from '../db/schema';
+import { amountSuffix, unitOf } from '../lib/amount';
 import { duplicateGroups, mergeGroup } from '../lib/fixedMeals';
 import { ingredientLines, nutritionText } from '../lib/mealText';
 import { BottomSheet } from './BottomSheet';
-import { Button, EmptyState, IconButton } from './ui';
+import { Button, EmptyState, IconButton, Segmented } from './ui';
 
-const EMPTY = { name: '', mealTypes: ['breakfast'] as MealType[], calories: '', protein: '', details: '' };
+const EMPTY = { name: '', mealTypes: ['breakfast'] as MealType[], calories: '', protein: '', details: '', unit: 'serving' as MealUnit };
 
 export function FixedMealsManager({ open, onClose }: { open: boolean; onClose: () => void }) {
   const fixedMeals = useFixedMeals();
@@ -17,7 +18,7 @@ export function FixedMealsManager({ open, onClose }: { open: boolean; onClose: (
 
   const startEdit = (m: FixedMeal) => {
     setEditingId(m.id);
-    setForm({ name: m.name, mealTypes: fixedMealTypes(m), calories: String(m.calories || ''), protein: String(m.protein || ''), details: m.details ?? '' });
+    setForm({ name: m.name, mealTypes: fixedMealTypes(m), calories: String(m.calories || ''), protein: String(m.protein || ''), details: m.details ?? '', unit: unitOf(m) });
   };
 
   const reset = () => {
@@ -37,6 +38,7 @@ export function FixedMealsManager({ open, onClose }: { open: boolean; onClose: (
       calories: Math.round(Number(form.calories) || 0),
       protein: Math.round(Number(form.protein) || 0),
       details: form.details.trim() || undefined,
+      unit: form.unit,
       active: existing?.active ?? true,
     });
     reset();
@@ -103,6 +105,15 @@ export function FixedMealsManager({ open, onClose }: { open: boolean; onClose: (
             })}
           </div>
         </div>
+        <Segmented<MealUnit>
+          accent="sky"
+          value={form.unit}
+          onChange={(unit) => setForm({ ...form, unit })}
+          options={[
+            { value: 'serving', label: 'ערכים למנה' },
+            { value: 'per100', label: `ערכים ל־100 ${amountSuffix('per100', form.mealTypes.every((t) => t === 'drink'))}` },
+          ]}
+        />
         <div className="grid grid-cols-2 gap-2">
           <input
             className="input bg-surface"
@@ -149,47 +160,52 @@ export function FixedMealsManager({ open, onClose }: { open: boolean; onClose: (
       {fixedMeals.length === 0 ? (
         <EmptyState emoji="🍽️" title="עוד אין ארוחות קבועות" text="הוסף ארוחות שאתה אוכל באופן קבוע כדי לרשום אותן בלחיצה" />
       ) : (
-        <ul className="space-y-2">
-          {fixedMeals.map((m, i) => (
-            <li key={m.id} className={`flex items-center gap-1 rounded-2xl border border-line p-2 ps-3 ${m.active ? '' : 'opacity-50'}`}>
-              <div className="flex-1">
-                <p className="font-semibold">{m.name}</p>
-                <p className="text-xs text-muted">
-                  {[
-                    fixedMealTypes(m).map((t) => MEAL_TYPE_LABELS[t]).join(' / '),
-                    nutritionText(m, true),
-                    ingredientLines(m.details).length ? `${ingredientLines(m.details).length} מרכיבים` : '',
-                  ]
-                    .filter(Boolean)
-                    .join(' · ')}
-                </p>
-              </div>
-              <label className="flex cursor-pointer items-center gap-1 px-1 text-xs text-muted">
-                <input
-                  type="checkbox"
-                  className="h-5 w-5 accent-sky-600"
-                  checked={m.active}
-                  onChange={() => saveFixedMeal({ ...m, active: !m.active })}
-                />
-                פעילה
-              </label>
-              <div className="flex flex-col">
-                <button aria-label="הזז למעלה" disabled={i === 0} onClick={() => moveFixedMeal(m.id!, -1)} className="px-1 text-muted disabled:opacity-30">
-                  <ChevronUp size={18} />
-                </button>
-                <button aria-label="הזז למטה" disabled={i === fixedMeals.length - 1} onClick={() => moveFixedMeal(m.id!, 1)} className="px-1 text-muted disabled:opacity-30">
-                  <ChevronDown size={18} />
-                </button>
-              </div>
-              <IconButton label="עריכה" onClick={() => startEdit(m)}>
-                <Pencil size={18} />
-              </IconButton>
-              <IconButton label="מחיקה" onClick={() => confirm(`למחוק את "${m.name}"?`) && deleteFixedMeal(m.id!)}>
-                <Trash2 size={18} />
-              </IconButton>
-            </li>
-          ))}
-        </ul>
+        <div className="space-y-4">
+          {MEAL_TYPE_ORDER.map((t) => {
+            // A meal that fits several times shows under each; A–B inside a group.
+            const group = fixedMeals.filter((m) => fixedMealTypes(m).includes(t)).sort((a, b) => a.name.localeCompare(b.name, 'he'));
+            if (!group.length) return null;
+            return (
+              <section key={t}>
+                <h3 className="mb-1.5 text-sm font-bold text-muted">
+                  {MEAL_TYPE_LABELS[t]} <span className="font-medium opacity-70">{group.length}</span>
+                </h3>
+                <ul className="space-y-2">
+                  {group.map((m) => (
+                    <li key={m.id} className={`flex items-center gap-1 rounded-2xl border border-line p-2 ps-3 ${m.active ? '' : 'opacity-50'}`}>
+                      <div className="flex-1">
+                        <p className="font-semibold">{m.name}</p>
+                        <p className="text-xs text-muted">
+                          {[
+                            nutritionText(m, true) && `${nutritionText(m, true)}${unitOf(m) === 'per100' ? ` ל־100 ${amountSuffix('per100', t === 'drink')}` : ''}`,
+                            ingredientLines(m.details).length ? `${ingredientLines(m.details).length} מרכיבים` : '',
+                          ]
+                            .filter(Boolean)
+                            .join(' · ')}
+                        </p>
+                      </div>
+                      <label className="flex cursor-pointer items-center gap-1 px-1 text-xs text-muted">
+                        <input
+                          type="checkbox"
+                          className="h-5 w-5 accent-sky-600"
+                          checked={m.active}
+                          onChange={() => saveFixedMeal({ ...m, active: !m.active })}
+                        />
+                        פעילה
+                      </label>
+                      <IconButton label="עריכה" onClick={() => startEdit(m)}>
+                        <Pencil size={18} />
+                      </IconButton>
+                      <IconButton label="מחיקה" onClick={() => confirm(`למחוק את "${m.name}"?`) && deleteFixedMeal(m.id!)}>
+                        <Trash2 size={18} />
+                      </IconButton>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            );
+          })}
+        </div>
       )}
     </BottomSheet>
   );

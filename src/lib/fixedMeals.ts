@@ -1,4 +1,4 @@
-import { fixedMealTypes, type FixedMeal } from '../db/schema';
+import { fixedMealTypes, MEAL_TYPE_ORDER, type FixedMeal } from '../db/schema';
 
 const norm = (name: string) => name.trim().replace(/\s+/g, ' ').toLowerCase();
 
@@ -17,7 +17,7 @@ export function duplicateGroups(meals: FixedMeal[]): FixedMeal[][] {
 export function mergeGroup(group: FixedMeal[]): FixedMeal {
   const [first, ...rest] = [...group].sort((a, b) => a.order - b.order);
   const types = new Set(group.flatMap((m) => fixedMealTypes(m)));
-  const ordered = (['breakfast', 'lunch', 'dinner', 'snack'] as const).filter((t) => types.has(t));
+  const ordered = MEAL_TYPE_ORDER.filter((t) => types.has(t));
   return {
     ...first,
     mealType: ordered[0] ?? first.mealType,

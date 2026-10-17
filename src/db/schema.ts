@@ -64,7 +64,10 @@ export interface Workout {
 
 export const isWorkoutDone = (w: Pick<Workout, 'done'>) => w.done !== false;
 
-export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
+export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'drink';
+
+/** Whether calories and protein are entered per serving or per 100 g (100 ml for drinks). */
+export type MealUnit = 'serving' | 'per100';
 
 export interface FixedMeal {
   id?: number;
@@ -79,6 +82,8 @@ export interface FixedMeal {
   order: number;
   /** What's in it, one ingredient per line */
   details?: string;
+  /** What calories and protein refer to; older meals count as one serving */
+  unit?: MealUnit;
 }
 
 export interface Meal {
@@ -97,6 +102,12 @@ export interface Meal {
   fromPlan?: boolean;
   /** What's in it, one ingredient per line */
   details?: string;
+  /** How much was eaten: grams / ml for per-100 meals, number of servings otherwise. Calories and protein above are the totals for it. */
+  unit?: MealUnit;
+  amount?: number;
+  /** Calories and protein per unit, so the amount can be changed later */
+  perCalories?: number;
+  perProtein?: number;
 }
 
 export interface Reminder {
@@ -155,9 +166,10 @@ export const MEAL_TYPE_LABELS: Record<MealType, string> = {
   lunch: 'צהריים',
   dinner: 'ערב',
   snack: 'נשנוש',
+  drink: 'שתייה',
 };
 
-export const MEAL_TYPE_ORDER: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
+export const MEAL_TYPE_ORDER: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack', 'drink'];
 
 /** The meal types a fixed meal can be planned for (older meals only have one). */
 export const fixedMealTypes = (fm: Pick<FixedMeal, 'mealType' | 'mealTypes'>): MealType[] =>

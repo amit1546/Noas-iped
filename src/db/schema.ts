@@ -148,6 +148,8 @@ export interface Settings {
   workDays: Weekday[];
   /** Per-date exceptions to workDays */
   workOverrides?: Record<ISODate, boolean>;
+  /** Body weight goal, kg */
+  targetWeight?: number;
 }
 
 export const DEFAULT_SETTINGS: Settings = {

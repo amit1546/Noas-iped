@@ -71,7 +71,7 @@ export function Plan() {
           <p className="mb-2 mt-5 text-sm font-bold text-muted">מה לאכול? רעיונות לפי זמן</p>
           <MealIdeas meals={fixedMeals} date={date} onManage={() => setManageMeals(true)} />
           {dayCalories > 0 && (
-            <p className={`mt-3 text-sm font-medium ${dayCalories > calorieGoal ? 'text-red-500' : 'text-muted'}`}>
+            <p className={`mt-3 text-sm font-medium ${dayCalories >= calorieGoal ? 'text-emerald-600' : 'text-muted'}`}>
               סה״כ ליום: {dayCalories.toLocaleString('he-IL')} מתוך {calorieGoal.toLocaleString('he-IL')} קל׳
             </p>
           )}

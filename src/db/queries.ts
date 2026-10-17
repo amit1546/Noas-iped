@@ -184,6 +184,22 @@ export async function toggleFixedMealEaten(fm: FixedMeal, date: ISODate): Promis
   return true;
 }
 
+/** The last few different meals eaten or planned, newest first, so a repeat is one tap. */
+export const useRecentMeals = (limit = 6) =>
+  useLiveQuery(async () => {
+    const recent = await db.meals.orderBy('date').reverse().limit(80).toArray();
+    const seen = new Set<string>();
+    const out: Meal[] = [];
+    for (const m of recent) {
+      const key = m.name.trim().toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(m);
+      if (out.length >= limit) break;
+    }
+    return out;
+  }, [limit]) ?? [];
+
 export const addMeal = (m: Omit<Meal, 'id'>) => db.meals.add(m);
 export const updateMeal = (id: number, patch: Partial<Meal>) => db.meals.update(id, patch);
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { addMeal, saveFixedMeal } from '../db/queries';
+import { addMeal, saveFixedMeal, useRecentMeals } from '../db/queries';
 import { MEAL_TYPE_LABELS, MEAL_TYPE_ORDER, type MealType, type MealUnit } from '../db/schema';
 import { amountSuffix, scaleNutrition } from '../lib/amount';
 import { mealTypeForTime } from '../lib/mealText';
@@ -18,6 +18,7 @@ export function AddMealSheet({
   date: string;
   plan: boolean;
 }) {
+  const recent = useRecentMeals();
   const [name, setName] = useState('');
   const [plan, setPlan] = useState(initialPlan);
   const [time, setTime] = useState('');
@@ -102,6 +103,30 @@ export function AddMealSheet({
             </button>
           ))}
         </div>
+        {!name && recent.length > 0 && (
+          <div className="flex flex-wrap gap-2" role="group" aria-label="ארוחות אחרונות">
+            {recent.map((m) => (
+              <button
+                type="button"
+                key={m.id}
+                className="chip text-muted hover:text-ink"
+                onClick={() => {
+                  setName(m.name);
+                  setMealType(m.mealType);
+                  setTypeTouched(true);
+                  setUnit(m.unit ?? 'serving');
+                  setAmount(String(m.unit === 'per100' ? m.amount ?? 100 : 100));
+                  setCalories(m.perCalories ?? m.calories ? String(m.perCalories ?? m.calories) : '');
+                  setProtein(m.perProtein ?? m.protein ? String(m.perProtein ?? m.protein) : '');
+                  setDetails(m.details ?? '');
+                  setShowDetails(Boolean(m.details));
+                }}
+              >
+                {m.name}
+              </button>
+            ))}
+          </div>
+        )}
         <div>
           <label className="label" htmlFor="meal-name">
             מה אכלת?

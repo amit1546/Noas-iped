@@ -5,17 +5,31 @@ import { ACCENT_600 } from '../lib/appearance';
 import { calorieStatus, type DayTotals } from '../lib/stats';
 import { ProgressBar } from './ProgressRing';
 
-const STATUS_COLOR = { under: ACCENT_600, near: '#f59e0b', over: '#ef4444' } as const;
+// The aim is to gain weight: reaching the goal is green, falling short is the thing to notice.
+export const REACHED_COLOR = '#10b981';
+const STATUS_COLOR = { under: ACCENT_600, near: '#f59e0b', reached: REACHED_COLOR } as const;
 
 /** A number you tap to edit in place (used for the daily calorie and protein goals). */
-function InlineGoal({ value, label, onSave }: { value: number; label: string; onSave: (n: number) => void }) {
-  const [editing, setEditing] = useState(false);
+export function InlineGoal({
+  value,
+  label,
+  onSave,
+  decimals = false,
+  autoEdit = false,
+}: {
+  value: number;
+  label: string;
+  onSave: (n: number) => void;
+  decimals?: boolean;
+  autoEdit?: boolean;
+}) {
+  const [editing, setEditing] = useState(autoEdit);
   const [draft, setDraft] = useState(String(value));
   useEffect(() => setDraft(String(value)), [value]);
 
   const save = (e?: React.FormEvent) => {
     e?.preventDefault();
-    const n = Math.round(Number(draft));
+    const n = decimals ? Math.round(Number(draft) * 10) / 10 : Math.round(Number(draft));
     if (n > 0 && n !== value) onSave(n);
     else setDraft(String(value));
     setEditing(false);
@@ -32,7 +46,8 @@ function InlineGoal({ value, label, onSave }: { value: number; label: string; on
     <form onSubmit={save} className="flex items-center">
       <input
         type="number"
-        inputMode="numeric"
+        step={decimals ? '0.1' : undefined}
+        inputMode={decimals ? 'decimal' : 'numeric'}
         autoFocus
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
@@ -62,7 +77,7 @@ export function CalorieBar({ totals, planned = 0 }: { totals: DayTotals; planned
         </span>
         <span className="text-line">|</span>
         <span>
-          {left >= 0 ? 'נשאר ' : 'חריגה '}
+          {left > 0 ? 'חסר ' : 'מעל היעד '}
           <b className="tabular-nums" style={{ color }}>
             {Math.abs(left).toLocaleString('he-IL')}
           </b>
@@ -82,7 +97,7 @@ export function CalorieBar({ totals, planned = 0 }: { totals: DayTotals; planned
           <span className="text-muted">גר׳</span>
         </span>
       </div>
-      <ProgressBar value={totals.protein} max={proteinGoal} color="#7c3aed" />
+      <ProgressBar value={totals.protein} max={proteinGoal} color={totals.protein >= proteinGoal ? REACHED_COLOR : '#7c3aed'} />
       {planned > 0 && <p className="mt-1.5 text-xs text-muted">ועוד {planned.toLocaleString('he-IL')} קל׳ מתוכננות להיום</p>}
     </div>
   );

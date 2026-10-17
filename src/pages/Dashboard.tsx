@@ -15,19 +15,21 @@ import {
   YAxis,
 } from 'recharts';
 import { Card, CardTitle, EmptyState, PageHeader, Segmented } from '../components/ui';
+import { REACHED_COLOR, InlineGoal } from '../components/CalorieBar';
 import { WeightEntry } from '../components/WeightCard';
 import {
   useAllHabitLogs,
   useBodyWeights,
   useHabits,
   useMealsBetween,
+  updateSettings,
   useSettings,
   useWorkoutsBetween,
 } from '../db/queries';
 import { ACCENT_300, ACCENT_500 } from '../lib/appearance';
 import { formatShort, rangeISO, shiftISO, todayISO, weekdayShort } from '../lib/dates';
 import { isScheduled } from '../lib/streaks';
-import { sumMeals } from '../lib/stats';
+import { sumMeals, weeklyWeightChange } from '../lib/stats';
 
 const tooltipStyle = {
   contentStyle: {
@@ -49,6 +51,7 @@ const RANGES: Record<Range, { days: number; bucket: number; label: string; text:
 };
 
 export function Dashboard() {
+  const [settingTarget, setSettingTarget] = useState(false);
   const today = todayISO();
   const [range, setRange] = useState<Range>('week');
   const cfg = RANGES[range];
@@ -94,6 +97,9 @@ export function Dashboard() {
   const loggedCalorieDays = calorieDays.filter((d) => d.calories > 0);
 
   const weightData = weights.filter((w) => w.date >= from).map((w) => ({ date: formatShort(w.date), kg: w.kg }));
+  const weekly = weeklyWeightChange(weights, today);
+  const latestKg = weights[weights.length - 1]?.kg;
+  const target = settings.targetWeight;
   const doneWorkouts = workouts.filter(isWorkoutDone).length;
 
   return (
@@ -183,7 +189,7 @@ export function Dashboard() {
                   <ReferenceLine y={settings.calorieGoal} stroke="#f59e0b" strokeDasharray="6 4" strokeWidth={2} />
                   <Bar dataKey="calories" radius={[10, 10, 4, 4]}>
                     {[...calorieDays].reverse().map((d, i) => (
-                      <Cell key={i} fill={d.calories > settings.calorieGoal ? '#ef4444' : '#06b6d4'} />
+                      <Cell key={i} fill={d.calories >= settings.calorieGoal ? REACHED_COLOR : '#06b6d4'} />
                     ))}
                   </Bar>
                 </BarChart>
@@ -196,13 +202,58 @@ export function Dashboard() {
 
         <Card>
           <CardTitle title="משקל גוף" accent="blue" icon={<Scale size={18} />} />
+          <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm">
+            {weekly && (
+              <span>
+                ממוצע שבועי <b className="tabular-nums">{weekly.current}</b> ק״ג{' '}
+                <b className={`tabular-nums ${weekly.diff >= 0 ? 'text-emerald-600' : 'text-amber-600'}`}>
+                  {weekly.diff > 0 ? '+' : ''}
+                  {weekly.diff}
+                </b>
+              </span>
+            )}
+            {target != null || settingTarget ? (
+              <span className="flex items-center gap-1 text-muted">
+                יעד
+                <InlineGoal
+                  decimals
+                  autoEdit={target == null}
+                  value={target ?? latestKg ?? 70}
+                  label="יעד משקל"
+                  onSave={(n) => {
+                    updateSettings({ targetWeight: n });
+                    setSettingTarget(false);
+                  }}
+                />
+                ק״ג
+                {target != null && latestKg != null && (
+                  <span className={latestKg >= target ? 'font-semibold text-emerald-600' : ''}>
+                    {latestKg >= target ? '· הגעת ליעד 🎉' : `· נשארו ${Math.round((target - latestKg) * 10) / 10}`}
+                  </span>
+                )}
+              </span>
+            ) : (
+              <button className="chip text-muted hover:text-ink" onClick={() => setSettingTarget(true)}>
+                + יעד משקל
+              </button>
+            )}
+          </div>
           {weightData.length > 1 ? (
             <div className="h-56" dir="ltr">
               <ResponsiveContainer>
                 <LineChart data={[...weightData].reverse()}>
                   <CartesianGrid vertical={false} stroke="rgb(var(--line))" />
                   <XAxis dataKey="date" {...axisProps} />
-                  <YAxis domain={['dataMin - 1', 'dataMax + 1']} {...axisProps} width={36} orientation="right" />
+                  <YAxis
+                    domain={[
+                      (min: number) => Math.floor(Math.min(min, target ?? min)) - 1,
+                      (max: number) => Math.ceil(Math.max(max, target ?? max)) + 1,
+                    ]}
+                    {...axisProps}
+                    width={36}
+                    orientation="right"
+                  />
+                  {target != null && <ReferenceLine y={target} stroke={REACHED_COLOR} strokeDasharray="6 4" strokeWidth={2} />}
                   <Tooltip {...tooltipStyle} formatter={(v) => [`${v} ק״ג`, 'משקל']} />
                   <Line type="monotone" dataKey="kg" stroke={ACCENT_500} strokeWidth={3} dot={{ r: 4, fill: ACCENT_500 }} />
                 </LineChart>

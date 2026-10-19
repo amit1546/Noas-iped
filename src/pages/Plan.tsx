@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { AddMealSheet } from '../components/AddMealSheet';
 import { DateNav } from '../components/DateNav';
 import { DayPlanList } from '../components/DayPlanList';
+import { WeekPlan } from '../components/WeekPlan';
 import { FixedMealsManager } from '../components/FixedMealsManager';
 import { HabitChecklist } from '../components/HabitChecklist';
 import { HabitForm } from '../components/HabitForm';
@@ -24,6 +25,21 @@ export function Plan() {
   const [habitForm, setHabitForm] = useState<{ open: boolean; habit?: Habit; name?: string }>({ open: false });
   const [planningMeal, setPlanningMeal] = useState(false);
   const [manageMeals, setManageMeals] = useState(false);
+  const [view, setView] = useState<'day' | 'week'>(() => {
+    try {
+      return localStorage.getItem('planView') === 'week' ? 'week' : 'day';
+    } catch {
+      return 'day';
+    }
+  });
+  const changeView = (v: 'day' | 'week') => {
+    setView(v);
+    try {
+      localStorage.setItem('planView', v);
+    } catch {
+      /* storage unavailable — the choice just isn't remembered */
+    }
+  };
 
   const plannedCalories = meals.filter((m) => m.planned).reduce((a, m) => a + m.calories, 0);
   const dayCalories = sumMeals(meals).calories + plannedCalories;
@@ -31,6 +47,39 @@ export function Plan() {
   return (
     <>
       <PageHeader title="תכנון" accent="blue" icon={<CalendarRange />} />
+      <div className="card mb-4 flex gap-1.5 p-1" role="tablist" aria-label="תצוגה">
+        {(
+          [
+            ['day', 'יום'],
+            ['week', 'שבוע'],
+          ] as const
+        ).map(([v, label]) => (
+          <button
+            key={v}
+            role="tab"
+            aria-selected={view === v}
+            onClick={() => changeView(v)}
+            className={`min-h-[44px] flex-1 rounded-xl text-sm font-bold transition ${
+              view === v ? 'bg-blue-600 text-white shadow' : 'text-muted hover:text-ink'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {view === 'week' ? (
+        <WeekPlan
+          date={date}
+          onChange={setDate}
+          onOpenDay={(d) => {
+            setDate(d);
+            changeView('day');
+            window.scrollTo({ top: 0 });
+          }}
+        />
+      ) : (
+      <>
       <DateNav date={date} onChange={setDate} />
 
       <div className="grid gap-5 lg:grid-cols-2">
@@ -94,6 +143,8 @@ export function Plan() {
           />
         </Card>
       </div>
+      </>
+      )}
 
       <FixedMealsManager open={manageMeals} onClose={() => setManageMeals(false)} />
       <AddMealSheet open={planningMeal} plan onClose={() => setPlanningMeal(false)} date={date} />

@@ -1,15 +1,13 @@
-import { Bell, CalendarClock, CalendarRange, Check, Dumbbell, Flame, ListChecks, Pencil, Plus, Settings2 } from 'lucide-react';
+import { CalendarClock, CalendarRange, Check, Flame, ListChecks, Pencil, Plus, Settings2 } from 'lucide-react';
 import { useState } from 'react';
 import { AddMealSheet } from '../components/AddMealSheet';
 import { DateNav } from '../components/DateNav';
+import { DayPlanList } from '../components/DayPlanList';
 import { FixedMealsManager } from '../components/FixedMealsManager';
 import { HabitChecklist } from '../components/HabitChecklist';
 import { HabitForm } from '../components/HabitForm';
 import { MealIdeas } from '../components/MealIdeas';
 import { PlannedMeals } from '../components/PlannedMeals';
-import { ReminderList } from '../components/ReminderList';
-import { TaskList } from '../components/TaskList';
-import { WorkoutList } from '../components/WorkoutList';
 import { Card, CardTitle, PageHeader } from '../components/ui';
 import { useFixedMeals, useMeals, useSettings } from '../db/queries';
 import type { Habit } from '../db/schema';
@@ -37,18 +35,8 @@ export function Plan() {
 
       <div className="grid gap-5 lg:grid-cols-2">
         <Card>
-          <CardTitle title="משימות" icon={<ListChecks size={18} />} />
-          <TaskList date={date} />
-        </Card>
-
-        <Card>
-          <CardTitle title="אימונים" icon={<Dumbbell size={18} />} />
-          <WorkoutList date={date} />
-        </Card>
-
-        <Card>
-          <CardTitle title="תזכורות" accent="blue" icon={<Bell size={18} />} />
-          <ReminderList date={date} />
+          <CardTitle title="היום שלי" icon={<ListChecks size={18} />} />
+          <DayPlanList date={date} />
         </Card>
 
         <Card>

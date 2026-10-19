@@ -51,11 +51,6 @@ export function DayPlanList({ date }: { date: ISODate }) {
   const reminders = useReminders(date);
   const celebrate = useCelebrate();
 
-  const [kind, setKind] = useState<Kind>('task');
-  const [text, setText] = useState('');
-  const [time, setTime] = useState('');
-  const [priority, setPriority] = useState<Priority>('medium');
-
   const items: Item[] = [
     ...tasks.map((t): Item => ({ kind: 'task', time: t.time, done: t.done, task: t })),
     ...workouts.map((w): Item => ({ kind: 'workout', time: w.time, done: isWorkoutDone(w), workout: w })),
@@ -67,6 +62,52 @@ export function DayPlanList({ date }: { date: ISODate }) {
       (a.kind === 'task' && b.kind === 'task' ? PRIORITY_RANK[a.task.priority] - PRIORITY_RANK[b.task.priority] : 0),
   );
 
+  const toggleWorkout = async (w: Workout) => {
+    const done = isWorkoutDone(w);
+    await setWorkoutDone(w.id!, !done);
+    if (!done) celebrate('אימון הושלם — כל הכבוד! 💪');
+  };
+
+  const isPast = date < todayISO();
+
+  return (
+    <div>
+      <PlanAddForm date={date} />
+
+      {items.length === 0 ? (
+        <p className="py-2 text-center text-sm text-muted">אין עדיין כלום ליום הזה ✨</p>
+      ) : (
+        <ul className="space-y-1.5">
+          <AnimatePresence initial={false}>
+            {items.map((item) => (
+              <motion.li
+                key={`${item.kind}-${item.kind === 'task' ? item.task.id : item.kind === 'workout' ? item.workout.id : item.reminder.id}`}
+                layout
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="flex items-center gap-2 rounded-2xl bg-canvas pe-1 ps-3"
+                style={{ borderInlineStart: `3px solid ${KIND_COLORS[item.kind]}` }}
+              >
+                {item.kind === 'task' && <TaskRow task={item.task} isPast={isPast} />}
+                {item.kind === 'workout' && <WorkoutRow workout={item.workout} onToggle={toggleWorkout} />}
+                {item.kind === 'reminder' && <ReminderRow reminder={item.reminder} />}
+              </motion.li>
+            ))}
+          </AnimatePresence>
+        </ul>
+      )}
+    </div>
+  );
+}
+
+/** One add form for tasks, workouts and reminders on a given day. */
+export function PlanAddForm({ date, onAdded, autoFocus = false }: { date: ISODate; onAdded?: () => void; autoFocus?: boolean }) {
+  const [kind, setKind] = useState<Kind>('task');
+  const [text, setText] = useState('');
+  const [time, setTime] = useState('');
+  const [priority, setPriority] = useState<Priority>('medium');
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     const t = text.trim();
@@ -77,20 +118,13 @@ export function DayPlanList({ date }: { date: ISODate }) {
     else await addReminder({ date, text: t, time: at });
     setText('');
     setTime('');
-  };
-
-  const toggleWorkout = async (w: Workout) => {
-    const done = isWorkoutDone(w);
-    await setWorkoutDone(w.id!, !done);
-    if (!done) celebrate('אימון הושלם — כל הכבוד! 💪');
+    onAdded?.();
   };
 
   const current = KINDS.find((k) => k.kind === kind)!;
-  const isPast = date < todayISO();
 
   return (
-    <div>
-      <form onSubmit={submit} className="mb-3 space-y-2">
+      <form onSubmit={submit} className={onAdded ? 'space-y-3' : 'mb-3 space-y-2'}>
         <div className="flex gap-1.5" role="radiogroup" aria-label="סוג">
           {KINDS.map(({ kind: k, label, icon: Icon }) => {
             const active = k === kind;
@@ -115,6 +149,7 @@ export function DayPlanList({ date }: { date: ISODate }) {
           value={text}
           onChange={(e) => setText(e.target.value)}
           aria-label={current.placeholder}
+          autoFocus={autoFocus}
         />
         <div className="flex items-center gap-2">
           <OptionalTime value={time} onChange={setTime} label={`שעה ל${current.label}`} />
@@ -141,31 +176,6 @@ export function DayPlanList({ date }: { date: ISODate }) {
           </button>
         </div>
       </form>
-
-      {items.length === 0 ? (
-        <p className="py-2 text-center text-sm text-muted">אין עדיין כלום ליום הזה ✨</p>
-      ) : (
-        <ul className="space-y-1.5">
-          <AnimatePresence initial={false}>
-            {items.map((item) => (
-              <motion.li
-                key={`${item.kind}-${item.kind === 'task' ? item.task.id : item.kind === 'workout' ? item.workout.id : item.reminder.id}`}
-                layout
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="flex items-center gap-2 rounded-2xl bg-canvas pe-1 ps-3"
-                style={{ borderInlineStart: `3px solid ${KIND_COLORS[item.kind]}` }}
-              >
-                {item.kind === 'task' && <TaskRow task={item.task} isPast={isPast} />}
-                {item.kind === 'workout' && <WorkoutRow workout={item.workout} onToggle={toggleWorkout} />}
-                {item.kind === 'reminder' && <ReminderRow reminder={item.reminder} />}
-              </motion.li>
-            ))}
-          </AnimatePresence>
-        </ul>
-      )}
-    </div>
   );
 }
 

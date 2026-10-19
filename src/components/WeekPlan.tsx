@@ -1,11 +1,14 @@
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { useState } from 'react';
 import { useRemindersBetween, useSettings, useTasksBetween, useWorkoutsBetween } from '../db/queries';
 import { isWorkoutDone, type ISODate } from '../db/schema';
 import { fromISO, rangeISO, shiftISO, todayISO, weekStartISO } from '../lib/dates';
 import { KIND_COLORS } from '../lib/kinds';
 import { isWorkDay } from '../lib/workdays';
+import { BottomSheet } from './BottomSheet';
+import { PlanAddForm } from './DayPlanList';
 
 type Kind = 'task' | 'workout' | 'reminder';
 type Entry = { key: string; kind: Kind; title: string; time?: string; done: boolean };
@@ -22,6 +25,7 @@ export function WeekPlan({ date, onChange, onOpenDay }: { date: ISODate; onChang
   const days = rangeISO(start, 7);
   const today = todayISO();
   const settings = useSettings();
+  const [adding, setAdding] = useState<ISODate | null>(null);
 
   const tasks = useTasksBetween(start, end);
   const workouts = useWorkoutsBetween(start, end);
@@ -78,11 +82,11 @@ export function WeekPlan({ date, onChange, onOpenDay }: { date: ISODate; onChang
           const isToday = d === today;
           const past = d < today;
           return (
-            <button
+            <div
               key={d}
-              onClick={() => onOpenDay(d)}
-              className={`card w-full p-4 text-start transition active:scale-[0.99] ${isToday ? 'ring-2 ring-blue-500' : ''} ${past ? 'opacity-70' : ''}`}
+              className={`card flex items-stretch gap-2 p-2 ${isToday ? 'ring-2 ring-blue-500' : ''} ${past ? 'opacity-70' : ''}`}
             >
+              <button onClick={() => onOpenDay(d)} className="min-w-0 flex-1 rounded-2xl p-2 text-start transition active:scale-[0.99]">
               <div className="mb-2 flex items-center gap-2">
                 <span className="text-lg font-extrabold">{format(fromISO(d), 'EEEE', { locale: he })}</span>
                 <span className="text-sm font-semibold text-muted">{format(fromISO(d), 'd/M')}</span>
@@ -113,10 +117,26 @@ export function WeekPlan({ date, onChange, onOpenDay }: { date: ISODate; onChang
                   {extra > 0 && <li className="text-xs font-semibold text-muted">ועוד {extra}…</li>}
                 </ul>
               )}
-            </button>
+              </button>
+              <button
+                onClick={() => setAdding(d)}
+                aria-label={`הוסף ל${format(fromISO(d), 'EEEE', { locale: he })}`}
+                className="grid w-12 shrink-0 place-items-center self-stretch rounded-2xl bg-canvas text-muted transition hover:text-ink active:scale-95"
+              >
+                <Plus size={22} />
+              </button>
+            </div>
           );
         })}
       </div>
+
+      <BottomSheet
+        open={adding !== null}
+        onClose={() => setAdding(null)}
+        title={adding ? `הוספה ל${format(fromISO(adding), 'EEEE d/M', { locale: he })}` : ''}
+      >
+        {adding && <PlanAddForm key={adding} date={adding} autoFocus onAdded={() => setAdding(null)} />}
+      </BottomSheet>
 
       <div className="mt-4 flex flex-wrap justify-center gap-4 text-xs text-muted">
         {(

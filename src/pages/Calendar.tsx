@@ -96,10 +96,11 @@ export function CalendarPage() {
   };
 
   return (
-    <>
+    // Fills the screen: the month card takes whatever height is left, and the weeks share it.
+    <div className="flex min-h-[calc(100dvh-9.5rem)] flex-col lg:min-h-[calc(100dvh-5rem)]">
       <PageHeader title="לוח שנה" accent="blue" icon={<CalendarDays />} />
 
-      <Card className="mb-4 p-4">
+      <Card className="mb-3 p-3">
         <div className="flex flex-wrap items-center gap-3">
           <button
             onClick={() => setMarking((m) => !m)}
@@ -156,8 +157,8 @@ export function CalendarPage() {
         </details>
       </Card>
 
-      <Card className="p-2 sm:p-5">
-        <div className="mb-3 flex items-center justify-between">
+      <Card className="flex flex-1 flex-col p-2 sm:p-4">
+        <div className="mb-2 flex items-center justify-between">
           <button
             aria-label="חודש קודם"
             onClick={() => setMonth((m) => addMonths(m, -1))}
@@ -175,7 +176,10 @@ export function CalendarPage() {
           </button>
         </div>
 
-        <div className="grid grid-cols-7 gap-1 text-center sm:gap-2">
+        <div
+          className="grid flex-1 grid-cols-7 gap-1 text-center sm:gap-2"
+          style={{ gridTemplateRows: `auto repeat(${weeks}, minmax(64px, 1fr))` }}
+        >
           {WEEKDAYS.map((d) => (
             <div key={d} className="pb-1 text-base font-bold text-muted">
               {d}
@@ -206,9 +210,7 @@ export function CalendarPage() {
                 aria-pressed={marking ? (brush === 'noa' ? noa : work && shift === brush) : undefined}
                 disabled={!inMonth}
                 aria-label={inMonth ? `${formatLong(d)}${work ? ', יום עבודה' : ''}${shift ? (shift === 'morning' ? ' בוקר' : ' ערב') : ''}${noa ? ', אצל נועה' : ''}` : undefined}
-                // The grid stretches to fill the screen: whatever is left under the header and above the legend, shared between the weeks.
-                style={{ minHeight: `max(68px, calc((100dvh - 470px) / ${weeks}))` }}
-                className={`relative flex flex-col items-center justify-center gap-1.5 rounded-2xl transition active:scale-95 ${
+                className={`relative flex min-h-[64px] flex-col items-stretch rounded-2xl transition active:scale-95 ${
                   !inMonth
                     ? 'invisible'
                     : marking
@@ -224,26 +226,27 @@ export function CalendarPage() {
                             : 'bg-canvas'
                 }`}
               >
-                {inMonth && work && (
-                  <span className={`absolute start-1.5 top-1.5 ${marking ? '' : 'text-slate-500 dark:text-slate-300'}`} aria-hidden>
-                    {shift ? <ShiftIcon shift={shift} size={13} /> : <Briefcase size={13} />}
+                {/* Three rows that never overlap: marks (work / Noa), the date, the dots. */}
+                <span className="flex h-5 items-center justify-between px-1.5 pt-1" aria-hidden>
+                  <span className={marking ? '' : 'text-slate-500 dark:text-slate-300'}>
+                    {inMonth && work && (shift ? <ShiftIcon shift={shift} size={14} /> : <Briefcase size={14} />)}
                   </span>
-                )}
-                {inMonth && noa && <Heart size={13} className="absolute end-1.5 top-1.5 fill-pink-400 text-pink-500" aria-hidden />}
+                  {inMonth && noa && <Heart size={14} className="fill-pink-400 text-pink-500" />}
+                </span>
                 <span
-                  className={`text-2xl font-bold tabular-nums sm:text-3xl ${
+                  className={`grid flex-1 place-items-center text-2xl font-bold leading-none tabular-nums sm:text-4xl ${
                     marking && work ? '' : d > today && !isToday ? 'text-muted' : ''
                   }`}
                 >
                   {fromISO(d).getDate()}
                 </span>
-                <span className="flex min-h-[12px] max-w-full flex-wrap items-center justify-center gap-1 px-1">{s && <Dots s={s} />}</span>
+                <span className="flex h-5 items-center justify-center gap-[3px] px-0.5 pb-1 sm:gap-1.5">{s && <Dots s={s} />}</span>
               </button>
             );
           })}
         </div>
 
-        <div className="mt-4 flex flex-wrap justify-center gap-x-5 gap-y-2 border-t border-line pt-3 text-sm text-muted">
+        <div className="mt-3 flex flex-wrap justify-center gap-x-4 gap-y-1.5 border-t border-line pt-2.5 text-xs text-muted sm:text-sm">
           <Legend color={DOT.tasks} label="משימות" />
           <Legend color={DOT.habits} label="קבועות" />
           <Legend color={DOT.workouts} label="אימונים" />
@@ -264,7 +267,7 @@ export function CalendarPage() {
       </Card>
 
       <DaySheet date={openDay} onClose={() => setOpenDay(null)} />
-    </>
+    </div>
   );
 }
 
@@ -280,8 +283,8 @@ function Dots({ s }: { s: DaySummary }) {
       {dots.map((d, i) => (
         <span
           key={i}
-          className="h-3 w-3 rounded-full sm:h-3.5 sm:w-3.5"
-          style={{ background: d.filled ? d.color : 'transparent', border: `2px solid ${d.color}` }}
+          className="h-2 w-2 shrink-0 rounded-full sm:h-3.5 sm:w-3.5"
+          style={{ background: d.filled ? d.color : 'transparent', border: `1.5px solid ${d.color}` }}
         />
       ))}
     </>

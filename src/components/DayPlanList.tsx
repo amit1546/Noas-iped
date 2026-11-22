@@ -1,21 +1,28 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowLeftCircle, Bell, Dumbbell, Flag, ListChecks, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeftCircle, Bell, Dumbbell, Flag, ListChecks, Pencil, Plus, Repeat, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import {
   addReminder,
   addTask,
   addWorkout,
+  deleteHabit,
   deleteReminder,
   deleteTask,
   deleteWorkout,
   moveTask,
   setWorkoutDone,
+  toggleHabit,
   toggleTask,
+  useAllHabitLogs,
+  useHabits,
   useReminders,
   useTasks,
   useWorkoutsOn,
 } from '../db/queries';
-import { isWorkoutDone, type ISODate, type Priority, type Reminder, type Task, type Workout } from '../db/schema';
+import { isWorkoutDone, type Habit, type ISODate, type Priority, type Reminder, type Task, type Workout } from '../db/schema';
+import { describeDays } from '../lib/habitText';
+import { isScheduled } from '../lib/streaks';
+import { BottomSheet } from './BottomSheet';
 import { shiftISO, todayISO } from '../lib/dates';
 import { KIND_COLORS } from '../lib/kinds';
 import { useCelebrate } from './Confetti';
@@ -23,12 +30,13 @@ import { ItemCalendarButton } from './ItemCalendarButton';
 import { OptionalTime } from './OptionalTime';
 import { CheckCircle, IconButton } from './ui';
 
-type Kind = 'task' | 'workout' | 'reminder';
+type Kind = 'task' | 'workout' | 'reminder' | 'habit';
 
 const KINDS: { kind: Kind; label: string; placeholder: string; icon: typeof ListChecks }[] = [
   { kind: 'task', label: 'משימה', placeholder: 'משימה חדשה…', icon: ListChecks },
   { kind: 'workout', label: 'אימון', placeholder: 'אימון חדש…', icon: Dumbbell },
   { kind: 'reminder', label: 'תזכורת', placeholder: 'תזכורת חדשה…', icon: Bell },
+  { kind: 'habit', label: 'קבועה', placeholder: 'משימה קבועה…', icon: Repeat },
 ];
 
 const PRIORITY_COLOR: Record<Priority, string> = { high: '#ef4444', medium: '#f59e0b', low: '#94a3b8' };
@@ -39,13 +47,26 @@ const NEXT_PRIORITY: Record<Priority, Priority> = { low: 'medium', medium: 'high
 type Item =
   | { kind: 'task'; time?: string; done: boolean; task: Task }
   | { kind: 'workout'; time?: string; done: boolean; workout: Workout }
-  | { kind: 'reminder'; time?: string; done: false; reminder: Reminder };
+  | { kind: 'reminder'; time?: string; done: false; reminder: Reminder }
+  | { kind: 'habit'; time?: string; done: boolean; habit: Habit };
 
 /**
  * Tasks, workouts and reminders for one day in a single list, sorted by time.
  * Each kind still lives in its own table — this only merges how they're shown and added.
  */
-export function DayPlanList({ date }: { date: ISODate }) {
+export function DayPlanList({
+  date,
+  onEditHabit,
+  onAddHabit,
+}: {
+  date: ISODate;
+  /** Opens the form for a recurring task (days, time, icon). Without it, recurring tasks can't be added or edited here. */
+  onEditHabit?: (h: Habit) => void;
+  onAddHabit?: (name: string) => void;
+}) {
+  const habits = useHabits();
+  const habitLogs = useAllHabitLogs();
+  const [managing, setManaging] = useState(false);
   const tasks = useTasks(date);
   const workouts = useWorkoutsOn(date);
   const reminders = useReminders(date);
@@ -55,6 +76,10 @@ export function DayPlanList({ date }: { date: ISODate }) {
     ...tasks.map((t): Item => ({ kind: 'task', time: t.time, done: t.done, task: t })),
     ...workouts.map((w): Item => ({ kind: 'workout', time: w.time, done: isWorkoutDone(w), workout: w })),
     ...reminders.map((r): Item => ({ kind: 'reminder', time: r.time, done: false, reminder: r })),
+    // Recurring tasks that fall on this day (or were ticked on it anyway)
+    ...habits
+      .filter((h) => habitLogs.some((l) => l.habitId === h.id && l.date === date) || (isScheduled(h, date) && h.createdAt <= date))
+      .map((h): Item => ({ kind: 'habit', time: h.time, done: habitLogs.some((l) => l.habitId === h.id && l.date === date), habit: h })),
   ].sort(
     (a, b) =>
       Number(a.done) - Number(b.done) ||
@@ -72,7 +97,7 @@ export function DayPlanList({ date }: { date: ISODate }) {
 
   return (
     <div>
-      <PlanAddForm date={date} />
+      <PlanAddForm date={date} onRecurring={onAddHabit} />
 
       {items.length === 0 ? (
         <p className="py-2 text-center text-sm text-muted">אין עדיין כלום ליום הזה ✨</p>
@@ -81,7 +106,7 @@ export function DayPlanList({ date }: { date: ISODate }) {
           <AnimatePresence initial={false}>
             {items.map((item) => (
               <motion.li
-                key={`${item.kind}-${item.kind === 'task' ? item.task.id : item.kind === 'workout' ? item.workout.id : item.reminder.id}`}
+                key={`${item.kind}-${item.kind === 'task' ? item.task.id : item.kind === 'workout' ? item.workout.id : item.kind === 'habit' ? item.habit.id : item.reminder.id}`}
                 layout
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
@@ -92,17 +117,61 @@ export function DayPlanList({ date }: { date: ISODate }) {
                 {item.kind === 'task' && <TaskRow task={item.task} isPast={isPast} />}
                 {item.kind === 'workout' && <WorkoutRow workout={item.workout} onToggle={toggleWorkout} />}
                 {item.kind === 'reminder' && <ReminderRow reminder={item.reminder} />}
+                {item.kind === 'habit' && <HabitRow habit={item.habit} date={date} done={item.done} onEdit={onEditHabit} />}
               </motion.li>
             ))}
           </AnimatePresence>
         </ul>
+      )}
+      {onEditHabit && habits.length > 0 && (
+        <button className="mt-3 text-sm font-medium text-muted underline" onClick={() => setManaging(true)}>
+          כל המשימות הקבועות ({habits.length})
+        </button>
+      )}
+      {onEditHabit && (
+        <BottomSheet open={managing} onClose={() => setManaging(false)} title="משימות קבועות">
+          <ul className="space-y-2">
+            {habits.map((h) => (
+              <li key={h.id} className="flex items-center gap-2 rounded-2xl bg-canvas py-2 pe-1 ps-3">
+                <span className="text-2xl">{h.emoji}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-semibold">{h.name}</span>
+                  <span className="text-xs text-muted">{[describeDays(h), h.time].filter(Boolean).join(' · ')}</span>
+                </span>
+                <IconButton
+                  label={`עריכת ${h.name}`}
+                  onClick={() => {
+                    setManaging(false);
+                    onEditHabit(h);
+                  }}
+                >
+                  <Pencil size={18} />
+                </IconButton>
+                <IconButton label={`מחיקת ${h.name}`} onClick={() => confirm(`למחוק את "${h.name}" ואת כל ההיסטוריה שלה?`) && deleteHabit(h.id!)}>
+                  <Trash2 size={18} />
+                </IconButton>
+              </li>
+            ))}
+          </ul>
+        </BottomSheet>
       )}
     </div>
   );
 }
 
 /** One add form for tasks, workouts and reminders on a given day. */
-export function PlanAddForm({ date, onAdded, autoFocus = false }: { date: ISODate; onAdded?: () => void; autoFocus?: boolean }) {
+export function PlanAddForm({
+  date,
+  onAdded,
+  autoFocus = false,
+  onRecurring,
+}: {
+  date: ISODate;
+  onAdded?: () => void;
+  autoFocus?: boolean;
+  /** When given, a "recurring" choice is offered; it hands the typed name over to open the recurring-task form. */
+  onRecurring?: (name: string) => void;
+}) {
   const [kind, setKind] = useState<Kind>('task');
   const [text, setText] = useState('');
   const [time, setTime] = useState('');
@@ -113,7 +182,8 @@ export function PlanAddForm({ date, onAdded, autoFocus = false }: { date: ISODat
     const t = text.trim();
     if (!t) return;
     const at = time || undefined;
-    if (kind === 'task') await addTask({ title: t, date, done: false, priority, time: at });
+    if (kind === 'habit') onRecurring?.(t);
+    else if (kind === 'task') await addTask({ title: t, date, done: false, priority, time: at });
     else if (kind === 'workout') await addWorkout({ title: t, date, time: at });
     else await addReminder({ date, text: t, time: at });
     setText('');
@@ -121,12 +191,13 @@ export function PlanAddForm({ date, onAdded, autoFocus = false }: { date: ISODat
     onAdded?.();
   };
 
+  const kinds = onRecurring ? KINDS : KINDS.filter((k) => k.kind !== 'habit');
   const current = KINDS.find((k) => k.kind === kind)!;
 
   return (
       <form onSubmit={submit} className={onAdded ? 'space-y-3' : 'mb-3 space-y-2'}>
         <div className="flex gap-1.5" role="radiogroup" aria-label="סוג">
-          {KINDS.map(({ kind: k, label, icon: Icon }) => {
+          {kinds.map(({ kind: k, label, icon: Icon }) => {
             const active = k === kind;
             return (
               <button
@@ -152,7 +223,7 @@ export function PlanAddForm({ date, onAdded, autoFocus = false }: { date: ISODat
           autoFocus={autoFocus}
         />
         <div className="flex items-center gap-2">
-          <OptionalTime value={time} onChange={setTime} label={`שעה ל${current.label}`} />
+          {kind !== 'habit' && <OptionalTime value={time} onChange={setTime} label={`שעה ל${current.label}`} />}
           <span className="flex-1" />
           {kind === 'task' && (
             <button
@@ -213,6 +284,32 @@ function TaskRow({ task, isPast }: { task: Task; isPast: boolean }) {
       <IconButton label="מחק משימה" onClick={() => deleteTask(task.id!)}>
         <Trash2 size={18} />
       </IconButton>
+    </>
+  );
+}
+
+function HabitRow({ habit: h, date, done, onEdit }: { habit: Habit; date: ISODate; done: boolean; onEdit?: (h: Habit) => void }) {
+  const color = KIND_COLORS.habit;
+  return (
+    <>
+      <button onClick={() => toggleHabit(h.id!, date)} className="flex min-h-[52px] flex-1 items-center gap-3 text-start">
+        <CheckCircle checked={done} color={color} />
+        <span className={`flex-1 font-medium transition ${done ? 'text-muted line-through' : ''}`}>
+          <Time time={h.time} color={color} />
+          {h.emoji} {h.name}
+        </span>
+        <Repeat size={15} className="shrink-0" style={{ color }} />
+      </button>
+      {h.time && (
+        <ItemCalendarButton
+          item={{ uid: `habit-${h.id}`, kind: 'habit', title: `${h.emoji} ${h.name}`, date, time: h.time, repeat: h.days.length ? h.days : 'daily' }}
+        />
+      )}
+      {onEdit && (
+        <IconButton label={`עריכת ${h.name}`} onClick={() => onEdit(h)}>
+          <Pencil size={18} />
+        </IconButton>
+      )}
     </>
   );
 }

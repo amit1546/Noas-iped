@@ -40,3 +40,19 @@ export function weeklyWeightChange(weights: { date: string; kg: number }[], toda
   if (current == null || previous == null) return null;
   return { current: Math.round(current * 10) / 10, diff: Math.round((current - previous) * 10) / 10 };
 }
+
+/** "2026-11" for a date, and the month after it. */
+export const monthKey = (iso: string) => iso.slice(0, 7);
+export function nextMonthKey(iso: string): string {
+  const [y, m] = iso.slice(0, 7).split('-').map(Number);
+  return m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, '0')}`;
+}
+
+/** The weight goal for a month; the older single goal still counts for the current month. */
+export function monthTarget(
+  s: { monthTargets?: Record<string, number>; targetWeight?: number },
+  key: string,
+  today: string,
+): number | undefined {
+  return s.monthTargets?.[key] ?? (key === monthKey(today) ? s.targetWeight : undefined);
+}

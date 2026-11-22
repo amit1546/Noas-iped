@@ -40,7 +40,7 @@ export function Layout() {
         </nav>
       </aside>
 
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 pb-32 pt-[max(1.25rem,env(safe-area-inset-top))] md:px-8 md:pt-8 lg:pb-12">
+      <main className={`mx-auto w-full flex-1 ${location.pathname === '/calendar' ? 'max-w-none' : 'max-w-5xl'} px-4 pb-32 pt-[max(1.25rem,env(safe-area-inset-top))] md:px-8 md:pt-8 lg:pb-12`}>
         {/* Enter-only animation: waiting for an exit animation (AnimatePresence mode="wait")
             could leave the screen blank on iPad until a refresh. */}
         <motion.div

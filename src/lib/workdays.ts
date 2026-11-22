@@ -12,3 +12,8 @@ export function isWorkDay(date: ISODate, s: WorkSettings): boolean {
   const override = s.workOverrides?.[date];
   return override ?? isWeeklyWorkDay(date, s);
 }
+
+/** Morning or evening, if the day is a work day with a shift chosen. */
+export const shiftOf = (date: ISODate, s: Pick<Settings, 'workShifts'>) => s.workShifts?.[date];
+
+export const isNoaDay = (date: ISODate, s: Pick<Settings, 'noaDays'>): boolean => s.noaDays?.[date] === true;

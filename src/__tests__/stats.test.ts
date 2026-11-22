@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { calorieStatus, sumMeals, weeklyWeightChange } from '../lib/stats';
+import { calorieStatus, monthKey, monthTarget, nextMonthKey, sumMeals, weeklyWeightChange } from '../lib/stats';
 
 describe('stats', () => {
   it('sums meals', () => {
@@ -34,5 +34,13 @@ describe('stats', () => {
     ];
     expect(weeklyWeightChange(w, '2026-10-14')).toEqual({ current: 72.2, diff: 1.7 });
     expect(weeklyWeightChange([{ date: '2026-10-14', kg: 70 }], '2026-10-14')).toBeNull();
+  });
+  it('keeps a weight goal for each month', () => {
+    expect(nextMonthKey('2026-11-22')).toBe('2026-12');
+    expect(nextMonthKey('2026-12-31')).toBe('2027-01');
+    const s = { monthTargets: { '2026-12': 76 }, targetWeight: 75 };
+    expect(monthTarget(s, '2026-12', '2026-11-22')).toBe(76);
+    expect(monthTarget(s, monthKey('2026-11-22'), '2026-11-22')).toBe(75); // the older single goal
+    expect(monthTarget({}, '2026-12', '2026-11-22')).toBeUndefined();
   });
 });

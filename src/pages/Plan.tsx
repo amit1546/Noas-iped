@@ -1,14 +1,14 @@
-import { CalendarClock, CalendarRange, Check, Flame, ListChecks, Pencil, Plus, Settings2 } from 'lucide-react';
+import { CalendarClock, CalendarRange, ListChecks, ListTodo, Plus, Settings2 } from 'lucide-react';
 import { useState } from 'react';
 import { AddMealSheet } from '../components/AddMealSheet';
 import { DateNav } from '../components/DateNav';
 import { DayPlanList } from '../components/DayPlanList';
 import { WeekPlan } from '../components/WeekPlan';
 import { FixedMealsManager } from '../components/FixedMealsManager';
-import { HabitChecklist } from '../components/HabitChecklist';
 import { HabitForm } from '../components/HabitForm';
 import { MealIdeas } from '../components/MealIdeas';
 import { PlannedMeals } from '../components/PlannedMeals';
+import { SomedayList } from '../components/SomedayList';
 import { Card, CardTitle, PageHeader } from '../components/ui';
 import { useFixedMeals, useMeals, useSettings } from '../db/queries';
 import type { Habit } from '../db/schema';
@@ -21,7 +21,6 @@ export function Plan() {
   const meals = useMeals(date);
   const fixedMeals = useFixedMeals().filter((m) => m.active);
   const { calorieGoal } = useSettings();
-  const [editingHabits, setEditingHabits] = useState(false);
   const [habitForm, setHabitForm] = useState<{ open: boolean; habit?: Habit; name?: string }>({ open: false });
   const [planningMeal, setPlanningMeal] = useState(false);
   const [manageMeals, setManageMeals] = useState(false);
@@ -85,7 +84,7 @@ export function Plan() {
       <div className="grid gap-5 lg:grid-cols-2">
         <Card>
           <CardTitle title="היום שלי" icon={<ListChecks size={18} />} />
-          <DayPlanList date={date} />
+          <DayPlanList date={date} onEditHabit={(habit) => setHabitForm({ open: true, habit })} onAddHabit={(name) => setHabitForm({ open: true, name })} />
         </Card>
 
         <Card>
@@ -114,33 +113,10 @@ export function Plan() {
           )}
         </Card>
 
+
         <Card>
-          <CardTitle
-            title="הרגלים"
-            icon={<Flame size={18} />}
-            action={
-              <button
-                className={`chip ${editingHabits ? 'border-transparent bg-blue-600 text-white' : 'text-muted hover:text-ink'}`}
-                onClick={() => setEditingHabits((e) => !e)}
-              >
-                {editingHabits ? (
-                  <>
-                    <Check size={16} /> סיום
-                  </>
-                ) : (
-                  <>
-                    <Pencil size={14} /> עריכה
-                  </>
-                )}
-              </button>
-            }
-          />
-          <HabitChecklist
-            date={date}
-            editing={editingHabits}
-            onEdit={(habit) => setHabitForm({ open: true, habit })}
-            onAdd={(name) => setHabitForm({ open: true, name })}
-          />
+          <CardTitle title="רשימה כללית" icon={<ListTodo size={18} />} />
+          <SomedayList date={date} />
         </Card>
       </div>
       </>

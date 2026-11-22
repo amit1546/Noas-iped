@@ -58,18 +58,18 @@ export function HabitForm({
   };
 
   return (
-    <BottomSheet open={open} onClose={onClose} title={habit ? 'עריכת הרגל' : 'הרגל חדש'}>
+    <BottomSheet open={open} onClose={onClose} title={habit ? 'עריכת משימה קבועה' : 'משימה קבועה חדשה'}>
       <form onSubmit={save} className="space-y-5">
         <div>
           <label className="label" htmlFor="habit-name">
-            שם ההרגל
+            שם המשימה
           </label>
           <input
             id="habit-name"
             className="input"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="שם ההרגל"
+            placeholder="שם המשימה"
             
           />
         </div>
@@ -139,7 +139,7 @@ export function HabitForm({
           </div>
         </div>
         <Button type="submit" className="w-full" disabled={!name.trim()}>
-          {habit ? 'שמירה' : 'הוספת הרגל'}
+          {habit ? 'שמירה' : 'הוספה'}
         </Button>
       </form>
     </BottomSheet>

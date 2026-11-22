@@ -22,14 +22,14 @@ import {
   useBodyWeights,
   useHabits,
   useMealsBetween,
-  updateSettings,
+  setMonthTarget,
   useSettings,
   useWorkoutsBetween,
 } from '../db/queries';
 import { ACCENT_300, ACCENT_500 } from '../lib/appearance';
 import { formatShort, rangeISO, shiftISO, todayISO, weekdayShort } from '../lib/dates';
 import { isScheduled } from '../lib/streaks';
-import { sumMeals, weeklyWeightChange } from '../lib/stats';
+import { monthKey, monthTarget, nextMonthKey, sumMeals, weeklyWeightChange } from '../lib/stats';
 
 const tooltipStyle = {
   contentStyle: {
@@ -51,7 +51,6 @@ const RANGES: Record<Range, { days: number; bucket: number; label: string; text:
 };
 
 export function Dashboard() {
-  const [settingTarget, setSettingTarget] = useState(false);
   const today = todayISO();
   const [range, setRange] = useState<Range>('week');
   const cfg = RANGES[range];
@@ -99,7 +98,10 @@ export function Dashboard() {
   const weightData = weights.filter((w) => w.date >= from).map((w) => ({ date: formatShort(w.date), kg: w.kg }));
   const weekly = weeklyWeightChange(weights, today);
   const latestKg = weights[weights.length - 1]?.kg;
-  const target = settings.targetWeight;
+  const curMonth = monthKey(today);
+  const nextMonth = nextMonthKey(today);
+  const target = monthTarget(settings, curMonth, today);
+  const nextTarget = monthTarget(settings, nextMonth, today);
   const doneWorkouts = workouts.filter(isWorkoutDone).length;
 
   return (
@@ -154,7 +156,7 @@ export function Dashboard() {
         </Card>
 
         <Card>
-          <CardTitle title="הרגלים — % השלמה יומי" icon={<Flame size={18} />} />
+          <CardTitle title="משימות קבועות — % השלמה" icon={<Flame size={18} />} />
           {habits.length ? (
             <div className="h-56" dir="ltr">
               <ResponsiveContainer>
@@ -172,7 +174,7 @@ export function Dashboard() {
               </ResponsiveContainer>
             </div>
           ) : (
-            <EmptyState emoji="📊" title="הוסף הרגלים כדי לראות גרף" />
+            <EmptyState emoji="📊" title="הוסף משימות קבועות כדי לראות גרף" />
           )}
         </Card>
 
@@ -212,31 +214,8 @@ export function Dashboard() {
                 </b>
               </span>
             )}
-            {target != null || settingTarget ? (
-              <span className="flex items-center gap-1 text-muted">
-                יעד
-                <InlineGoal
-                  decimals
-                  autoEdit={target == null}
-                  value={target ?? latestKg ?? 70}
-                  label="יעד משקל"
-                  onSave={(n) => {
-                    updateSettings({ targetWeight: n });
-                    setSettingTarget(false);
-                  }}
-                />
-                ק״ג
-                {target != null && latestKg != null && (
-                  <span className={latestKg >= target ? 'font-semibold text-emerald-600' : ''}>
-                    {latestKg >= target ? '· הגעת ליעד 🎉' : `· נשארו ${Math.round((target - latestKg) * 10) / 10}`}
-                  </span>
-                )}
-              </span>
-            ) : (
-              <button className="chip text-muted hover:text-ink" onClick={() => setSettingTarget(true)}>
-                + יעד משקל
-              </button>
-            )}
+            <TargetRow label="יעד החודש" month={curMonth} value={target} latest={latestKg} />
+            <TargetRow label="יעד לחודש הבא" month={nextMonth} value={nextTarget} />
           </div>
           {weightData.length > 1 ? (
             <div className="h-56" dir="ltr">
@@ -274,3 +253,36 @@ export function Dashboard() {
 }
 
 
+
+/** A weight goal for one month: tap to set or change it; for the current month it also shows how far there is to go. */
+function TargetRow({ label, month, value, latest }: { label: string; month: string; value?: number; latest?: number }) {
+  const [setting, setSetting] = useState(false);
+  if (value == null && !setting) {
+    return (
+      <button className="chip text-muted hover:text-ink" onClick={() => setSetting(true)}>
+        + {label}
+      </button>
+    );
+  }
+  return (
+    <span className="flex items-center gap-1 text-muted">
+      {label}
+      <InlineGoal
+        decimals
+        autoEdit={value == null}
+        value={value ?? latest ?? 70}
+        label={label}
+        onSave={(n) => {
+          setMonthTarget(month, n);
+          setSetting(false);
+        }}
+      />
+      ק״ג
+      {value != null && latest != null && (
+        <span className={latest >= value ? 'font-semibold text-emerald-600' : ''}>
+          {latest >= value ? '· הגעת ליעד 🎉' : `· נשארו ${Math.round((value - latest) * 10) / 10}`}
+        </span>
+      )}
+    </span>
+  );
+}

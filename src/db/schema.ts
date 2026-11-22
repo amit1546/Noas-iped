@@ -148,8 +148,24 @@ export interface Settings {
   workDays: Weekday[];
   /** Per-date exceptions to workDays */
   workOverrides?: Record<ISODate, boolean>;
-  /** Body weight goal, kg */
+  /** Body weight goal, kg (older single goal; the monthly goals below take over) */
   targetWeight?: number;
+  /** Body weight goal for each month, keyed 'YYYY-MM' */
+  monthTargets?: Record<string, number>;
+  /** Which shift a work day is */
+  workShifts?: Record<ISODate, WorkShift>;
+  /** Days spent at Noa's */
+  noaDays?: Record<ISODate, boolean>;
+}
+
+export type WorkShift = 'morning' | 'evening';
+
+/** A to-do with no date: sits in the general list until it is given a day. */
+export interface SomedayTask {
+  id?: number;
+  title: string;
+  done: boolean;
+  createdAt: ISODate;
 }
 
 export const DEFAULT_SETTINGS: Settings = {

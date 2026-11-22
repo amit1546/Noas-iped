@@ -16,7 +16,7 @@ import { isStandaloneApp, sendICS } from '../lib/reminder';
 import { BottomSheet } from './BottomSheet';
 import { Button, Segmented } from './ui';
 
-const KIND_LABEL: Record<EventKind, string> = { task: 'משימה', habit: 'הרגל', workout: 'אימון', meal: 'ארוחה', reminder: 'תזכורת' };
+const KIND_LABEL: Record<EventKind, string> = { task: 'משימה', habit: 'קבועה', workout: 'אימון', meal: 'ארוחה', reminder: 'תזכורת' };
 
 /** A button that opens the "send to the phone's calendar (and so to the watch)" sheet. */
 export function CalendarExportButton({ date, label = 'ליומן הטלפון' }: { date: ISODate; label?: string }) {
@@ -98,13 +98,13 @@ function CalendarExportSheet({ open, date, onClose }: { open: boolean; date: ISO
           {hasHabitWithTime && (
             <label className="flex cursor-pointer items-center gap-3 rounded-2xl bg-canvas p-3">
               <input type="checkbox" className="h-5 w-5 accent-blue-600" checked={recurHabits} onChange={(e) => setRecurHabits(e.target.checked)} />
-              <span className="font-medium">הרגלים חוזרים בכל שבוע, בימים שלהם</span>
+              <span className="font-medium">משימות קבועות חוזרות בכל שבוע, בימים שלהן</span>
             </label>
           )}
         </div>
 
         {events.length === 0 ? (
-          <p className="py-4 text-center text-muted">אין כאן כלום עם שעה. מוסיפים שעה למשימה, אימון, ארוחה, תזכורת או הרגל, והם יופיעו כאן.</p>
+          <p className="py-4 text-center text-muted">אין כאן כלום עם שעה. מוסיפים שעה למשימה, אימון, ארוחה, תזכורת או משימה קבועה, והם יופיעו כאן.</p>
         ) : (
           <ul className="space-y-1.5">
             {events.map((e) => {

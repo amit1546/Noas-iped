@@ -1,9 +1,9 @@
-import { ChevronDown, Plus } from 'lucide-react';
+import { ChevronDown, Plus, Search } from 'lucide-react';
 import { useState } from 'react';
 import { planFixedMeal } from '../db/queries';
 import { fixedMealTypes, MEAL_TYPE_LABELS, MEAL_TYPE_ORDER, type FixedMeal, type ISODate, type MealType } from '../db/schema';
 import { amountSuffix, unitOf } from '../lib/amount';
-import { ingredientLines, nutritionText } from '../lib/mealText';
+import { ingredientLines, mealTypeForTime, nutritionText } from '../lib/mealText';
 
 /**
  * The saved meals, split by time of day (breakfast / lunch / dinner / snack), so
@@ -14,6 +14,7 @@ export function MealIdeas({ meals, date, onManage }: { meals: FixedMeal[]; date:
   // Closed until a time of day is tapped, so the page isn't one long list.
   const [tab, setTab] = useState<MealType | null>(null);
   const [openId, setOpenId] = useState<number | null>(null);
+  const [query, setQuery] = useState('');
 
   if (!meals.length) {
     return (
@@ -27,10 +28,38 @@ export function MealIdeas({ meals, date, onManage }: { meals: FixedMeal[]; date:
   }
 
   const forType = (t: MealType) => meals.filter((m) => fixedMealTypes(m).includes(t));
-  const list = tab ? forType(tab) : [];
+  const q = query.trim().toLowerCase();
+  // Searching looks through every saved meal, by name or ingredient, whatever the time of day.
+  const list = q
+    ? meals.filter((m) => `${m.name}\n${m.details ?? ''}`.toLowerCase().includes(q))
+    : tab
+      ? forType(tab)
+      : [];
+  // Which time of day a meal is planned for: the open tab, or the best fit when searching.
+  const typeFor = (fm: FixedMeal): MealType => {
+    if (!q && tab) return tab;
+    const types = fixedMealTypes(fm);
+    const now = mealTypeForTime();
+    return types.includes(now) ? now : types[0];
+  };
 
   return (
     <div className="mb-4">
+      <label className="relative mb-2 block">
+        <Search size={16} className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-muted" />
+        <input
+          className="input ps-9"
+          type="search"
+          placeholder="חיפוש אוכל"
+          aria-label="חיפוש אוכל"
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setOpenId(null);
+          }}
+        />
+      </label>
+      {!q && (
       <div className="mb-2 grid grid-cols-5 gap-1 rounded-2xl bg-canvas p-1" role="tablist" aria-label="זמן ארוחה">
         {MEAL_TYPE_ORDER.map((t) => {
           const count = forType(t).length;
@@ -53,20 +82,22 @@ export function MealIdeas({ meals, date, onManage }: { meals: FixedMeal[]; date:
           );
         })}
       </div>
+      )}
 
-      {!tab ? null : list.length === 0 ? (
-        <p className="py-3 text-center text-sm text-muted">אין עדיין ארוחות קבועות ל{MEAL_TYPE_LABELS[tab]}</p>
+      {!q && !tab ? null : list.length === 0 ? (
+        <p className="py-3 text-center text-sm text-muted">{q ? 'לא נמצא' : `אין עדיין ארוחות קבועות ל${MEAL_TYPE_LABELS[tab!]}`}</p>
       ) : (
         <ul className="space-y-1.5">
           {list.map((fm) => {
+            const type = typeFor(fm);
             const lines = ingredientLines(fm.details);
             const open = openId === fm.id;
             return (
               <li key={fm.id} className="rounded-2xl bg-canvas">
                 <div className="flex items-stretch">
                   <button
-                    onClick={() => planFixedMeal(fm, date, undefined, tab!)}
-                    aria-label={`תכנן ${fm.name} ל${MEAL_TYPE_LABELS[tab!]}`}
+                    onClick={() => planFixedMeal(fm, date, undefined, type)}
+                    aria-label={`תכנן ${fm.name} ל${MEAL_TYPE_LABELS[type]}`}
                     className="flex min-h-[52px] flex-1 items-center gap-2.5 px-3 text-start active:opacity-70"
                   >
                     <Plus size={18} className="shrink-0 text-sky-600 dark:text-sky-400" />
@@ -75,7 +106,7 @@ export function MealIdeas({ meals, date, onManage }: { meals: FixedMeal[]; date:
                       {nutritionText(fm) && (
                         <span className="text-xs text-muted">
                           {nutritionText(fm)}
-                          {unitOf(fm) === 'per100' && ` · ל־100 ${amountSuffix('per100', tab === 'drink')}`}
+                          {unitOf(fm) === 'per100' && ` · ל־100 ${amountSuffix('per100', type === 'drink')}`}
                         </span>
                       )}
                     </span>

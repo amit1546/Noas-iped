@@ -72,7 +72,7 @@ interface Item {
 
 const KIND: Record<Kind, { label: string; color: string; icon: ReactNode }> = {
   task: { label: 'משימה', color: KIND_COLORS.task, icon: <ListChecks size={14} /> },
-  habit: { label: 'הרגל', color: KIND_COLORS.habit, icon: <Flame size={14} /> },
+  habit: { label: 'קבועה', color: KIND_COLORS.habit, icon: <Flame size={14} /> },
   workout: { label: 'אימון', color: KIND_COLORS.workout, icon: <Dumbbell size={14} /> },
   meal: { label: 'ארוחה', color: KIND_COLORS.meal, icon: <Apple size={14} /> },
   reminder: { label: 'תזכורת', color: KIND_COLORS.reminder, icon: <Bell size={14} /> },
@@ -269,7 +269,7 @@ export function Today() {
         <Card className="text-center">
           <div className="mx-auto mb-3 grid h-16 w-16 place-items-center rounded-3xl bg-canvas text-3xl">🗓️</div>
           <p className="font-semibold">עוד לא תכננת כלום להיום</p>
-          <p className="mt-1 text-sm text-muted">משימות, הרגלים, אימונים וארוחות מוסיפים במסך התכנון</p>
+          <p className="mt-1 text-sm text-muted">משימות, משימות קבועות, אימונים וארוחות מוסיפים במסך התכנון</p>
           <Link to="/plan" className="btn mt-4 bg-blue-600 text-white hover:bg-blue-700">
             <CalendarRange size={18} /> לתכנון היום
           </Link>

@@ -11,7 +11,9 @@ import {
   type MealType,
   type Reminder,
   type Settings,
+  type SomedayTask,
   type Task,
+  type WorkShift,
 } from './schema';
 
 /* ---------- settings ---------- */
@@ -122,6 +124,59 @@ export async function setWorkDayOverride(date: ISODate, isWork: boolean, weeklyD
   if (isWork === weeklyDefault) delete overrides[date];
   else overrides[date] = isWork;
   await db.settings.put({ ...current, workOverrides: overrides, id: 'main' });
+}
+
+/** Sets (or clears, with undefined) the shift of a work day. */
+export async function setWorkShift(date: ISODate, shift: WorkShift | undefined) {
+  const current = (await db.settings.get('main')) ?? DEFAULT_SETTINGS;
+  const shifts = { ...(current.workShifts ?? {}) };
+  if (shift) shifts[date] = shift;
+  else delete shifts[date];
+  await db.settings.put({ ...current, workShifts: shifts, id: 'main' });
+}
+
+/**
+ * Marks a date as a work day (with a shift) or takes the mark off, in one write so the two
+ * settings changes can't overwrite each other.
+ */
+export async function markWorkDay(date: ISODate, work: boolean, weeklyDefault: boolean, shift?: WorkShift) {
+  const current = (await db.settings.get('main')) ?? DEFAULT_SETTINGS;
+  const overrides = { ...(current.workOverrides ?? {}) };
+  if (work === weeklyDefault) delete overrides[date];
+  else overrides[date] = work;
+  const shifts = { ...(current.workShifts ?? {}) };
+  if (work && shift) shifts[date] = shift;
+  else if (!work) delete shifts[date];
+  await db.settings.put({ ...current, workOverrides: overrides, workShifts: shifts, id: 'main' });
+}
+
+export async function setNoaDay(date: ISODate, on: boolean) {
+  const current = (await db.settings.get('main')) ?? DEFAULT_SETTINGS;
+  const days = { ...(current.noaDays ?? {}) };
+  if (on) days[date] = true;
+  else delete days[date];
+  await db.settings.put({ ...current, noaDays: days, id: 'main' });
+}
+
+export async function setMonthTarget(month: string, kg: number) {
+  const current = (await db.settings.get('main')) ?? DEFAULT_SETTINGS;
+  await db.settings.put({ ...current, monthTargets: { ...(current.monthTargets ?? {}), [month]: kg }, id: 'main' });
+}
+
+/* ---------- general list (tasks without a date) ---------- */
+
+export const useSomeday = () =>
+  useLiveQuery(() => db.someday.toArray(), []) ?? ([] as SomedayTask[]);
+export const addSomeday = (title: string, createdAt: ISODate) => db.someday.add({ title, done: false, createdAt });
+export const toggleSomeday = (t: SomedayTask) => db.someday.update(t.id!, { done: !t.done });
+export const deleteSomeday = (id: number) => db.someday.delete(id);
+
+/** Gives a general-list item a day: it becomes a normal task there and leaves the list. */
+export async function scheduleSomeday(item: SomedayTask, date: ISODate) {
+  await db.transaction('rw', db.someday, db.tasks, async () => {
+    await db.tasks.add({ title: item.title, date, done: false, priority: 'medium' });
+    await db.someday.delete(item.id!);
+  });
 }
 
 /* ---------- nutrition ---------- */

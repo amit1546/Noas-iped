@@ -1,12 +1,14 @@
 import { addMonths, endOfMonth, format, startOfMonth } from 'date-fns';
 import { he } from 'date-fns/locale';
-import { Bell, Briefcase, CalendarDays, CalendarRange, Check, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Bell, Briefcase, CalendarDays, CalendarRange, Check, ChevronLeft, ChevronRight, Heart } from 'lucide-react';
 import { useMemo, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BottomSheet } from '../components/BottomSheet';
 import { Card, PageHeader } from '../components/ui';
+import { ShiftIcon, WorkBadge } from '../components/WorkBadge';
 import {
-  setWorkDayOverride,
+  markWorkDay,
+  setNoaDay,
   updateSettings,
   useHabitLogsBetween,
   useHabits,
@@ -24,7 +26,7 @@ import { formatLong, fromISO, rangeISO, shiftISO, toISO, todayISO } from '../lib
 import { KIND_COLORS } from '../lib/kinds';
 import { useSelectedDate } from '../lib/selectedDate';
 import { isScheduled } from '../lib/streaks';
-import { isWeeklyWorkDay, isWorkDay } from '../lib/workdays';
+import { isNoaDay, isWeeklyWorkDay, isWorkDay, shiftOf } from '../lib/workdays';
 
 const DOT = {
   tasks: KIND_COLORS.task,
@@ -50,6 +52,8 @@ export function CalendarPage() {
   const [month, setMonth] = useState(() => startOfMonth(fromISO(selected)));
   const [openDay, setOpenDay] = useState<ISODate | null>(null);
   const [marking, setMarking] = useState(false);
+  // What a tap on a date does while marking.
+  const [brush, setBrush] = useState<'morning' | 'evening' | 'noa'>('morning');
   const settings = useSettings();
   const today = todayISO();
 
@@ -103,9 +107,29 @@ export function CalendarPage() {
             className={`btn px-5 ${marking ? 'bg-slate-700 text-white dark:bg-slate-200 dark:text-slate-900' : 'bg-canvas text-ink hover:bg-line/60'}`}
           >
             {marking ? <Check size={18} /> : <Briefcase size={18} />}
-            {marking ? 'סיום סימון' : 'סימון ימי עבודה'}
+            {marking ? 'סיום סימון' : 'סימון ימים'}
           </button>
-          {marking && <p className="min-w-0 flex-1 text-sm text-muted">לחץ על כל יום שיש בו עבודה, ולחיצה נוספת מבטלת</p>}
+          {marking && (
+            <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="מה לסמן">
+              {(
+                [
+                  ['morning', 'עבודה בוקר'],
+                  ['evening', 'עבודה ערב'],
+                  ['noa', 'אצל נועה'],
+                ] as const
+              ).map(([b, label]) => (
+                <button
+                  key={b}
+                  role="radio"
+                  aria-checked={brush === b}
+                  onClick={() => setBrush(b)}
+                  className={`chip ${brush === b ? (b === 'noa' ? 'border-transparent bg-pink-500 text-white' : 'border-transparent bg-amber-500 text-white') : 'text-muted hover:text-ink'}`}
+                >
+                  {b === 'noa' ? <Heart size={15} /> : <ShiftIcon shift={b} size={15} />} {label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
         <details className="group mt-3">
           <summary className="cursor-pointer text-sm font-medium text-muted marker:content-none hover:text-ink">
@@ -132,7 +156,7 @@ export function CalendarPage() {
         </details>
       </Card>
 
-      <Card className="p-3 sm:p-5">
+      <Card className="p-2 sm:p-5">
         <div className="mb-3 flex items-center justify-between">
           <button
             aria-label="חודש קודם"
@@ -151,7 +175,7 @@ export function CalendarPage() {
           </button>
         </div>
 
-        <div className="grid grid-cols-7 gap-1.5 text-center sm:gap-2">
+        <div className="grid grid-cols-7 gap-1 text-center sm:gap-2">
           {WEEKDAYS.map((d) => (
             <div key={d} className="pb-1 text-base font-bold text-muted">
               {d}
@@ -163,41 +187,51 @@ export function CalendarPage() {
             const isSel = d === selected;
             const isToday = d === today;
             const work = isWorkDay(d, settings);
+            const shift = shiftOf(d, settings);
+            const noa = isNoaDay(d, settings);
             return (
               <button
                 key={d}
                 onClick={() => {
                   if (marking) {
-                    // Marking mode: one tap turns this exact date into a work day (or back).
-                    setWorkDayOverride(d, !work, isWeeklyWorkDay(d, settings));
+                    // Marking mode: one tap puts the chosen mark on this exact date, and a second tap takes it off.
+                    if (brush === 'noa') setNoaDay(d, !noa);
+                    else if (work && shift === brush) markWorkDay(d, false, isWeeklyWorkDay(d, settings));
+                    else markWorkDay(d, true, isWeeklyWorkDay(d, settings), brush);
                     return;
                   }
                   setSelected(d);
                   setOpenDay(d);
                 }}
-                aria-pressed={marking ? work : undefined}
+                aria-pressed={marking ? (brush === 'noa' ? noa : work && shift === brush) : undefined}
                 disabled={!inMonth}
-                aria-label={inMonth ? `${formatLong(d)}${work ? ', יום עבודה' : ''}` : undefined}
-                style={{ minHeight: 'clamp(64px, 10vh, 140px)' }}
+                aria-label={inMonth ? `${formatLong(d)}${work ? ', יום עבודה' : ''}${shift ? (shift === 'morning' ? ' בוקר' : ' ערב') : ''}${noa ? ', אצל נועה' : ''}` : undefined}
+                // The grid stretches to fill the screen: whatever is left under the header and above the legend, shared between the weeks.
+                style={{ minHeight: `max(68px, calc((100dvh - 470px) / ${weeks}))` }}
                 className={`relative flex flex-col items-center justify-center gap-1.5 rounded-2xl transition active:scale-95 ${
                   !inMonth
                     ? 'invisible'
                     : marking
-                      ? `${work ? 'bg-slate-700 text-white dark:bg-slate-200 dark:text-slate-900' : 'bg-canvas ring-1 ring-line'} ${isToday ? 'ring-[3px] ring-blue-600' : ''}`
+                      ? `${work ? 'bg-slate-700 text-white dark:bg-slate-200 dark:text-slate-900' : noa ? 'bg-pink-50 dark:bg-pink-500/10' : 'bg-canvas'} ${noa ? 'ring-2 ring-pink-400' : work ? '' : 'ring-1 ring-line'} ${isToday ? 'ring-[3px] ring-blue-600' : ''}`
                       : isToday
                       ? 'bg-blue-50 text-blue-700 ring-[3px] ring-blue-600 dark:bg-blue-500/15 dark:text-blue-200'
                       : isSel
                         ? 'bg-blue-50 ring-2 ring-blue-400 dark:bg-blue-500/10'
                         : work
                           ? 'bg-slate-200/70 dark:bg-slate-500/15'
-                          : 'bg-canvas'
+                          : noa
+                            ? 'bg-pink-50 dark:bg-pink-500/10'
+                            : 'bg-canvas'
                 }`}
               >
                 {inMonth && work && (
-                  <Briefcase size={13} className={`absolute start-2 top-2 ${marking ? '' : 'text-slate-500 dark:text-slate-300'}`} aria-hidden />
+                  <span className={`absolute start-1.5 top-1.5 ${marking ? '' : 'text-slate-500 dark:text-slate-300'}`} aria-hidden>
+                    {shift ? <ShiftIcon shift={shift} size={13} /> : <Briefcase size={13} />}
+                  </span>
                 )}
+                {inMonth && noa && <Heart size={13} className="absolute end-1.5 top-1.5 fill-pink-400 text-pink-500" aria-hidden />}
                 <span
-                  className={`text-xl font-bold tabular-nums sm:text-2xl ${
+                  className={`text-2xl font-bold tabular-nums sm:text-3xl ${
                     marking && work ? '' : d > today && !isToday ? 'text-muted' : ''
                   }`}
                 >
@@ -211,11 +245,20 @@ export function CalendarPage() {
 
         <div className="mt-4 flex flex-wrap justify-center gap-x-5 gap-y-2 border-t border-line pt-3 text-sm text-muted">
           <Legend color={DOT.tasks} label="משימות" />
-          <Legend color={DOT.habits} label="הרגלים" />
+          <Legend color={DOT.habits} label="קבועות" />
           <Legend color={DOT.workouts} label="אימונים" />
           <Legend color={DOT.reminders} label="תזכורות" />
           <span className="flex items-center gap-1.5">
-            <Briefcase size={14} /> יום עבודה
+            <Briefcase size={14} /> עבודה
+          </span>
+          <span className="flex items-center gap-1.5">
+            <ShiftIcon shift="morning" /> בוקר
+          </span>
+          <span className="flex items-center gap-1.5">
+            <ShiftIcon shift="evening" /> ערב
+          </span>
+          <span className="flex items-center gap-1.5">
+            <Heart size={14} className="fill-pink-400 text-pink-500" /> אצל נועה
           </span>
         </div>
       </Card>
@@ -237,7 +280,7 @@ function Dots({ s }: { s: DaySummary }) {
       {dots.map((d, i) => (
         <span
           key={i}
-          className="h-2.5 w-2.5 rounded-full sm:h-3 sm:w-3"
+          className="h-3 w-3 rounded-full sm:h-3.5 sm:w-3.5"
           style={{ background: d.filled ? d.color : 'transparent', border: `2px solid ${d.color}` }}
         />
       ))}
@@ -256,7 +299,6 @@ function Legend({ color, label }: { color: string; label: string }) {
 /** Everything on one day, in a pop-up. */
 function DaySheet({ date, onClose }: { date: ISODate | null; onClose: () => void }) {
   const navigate = useNavigate();
-  const settings = useSettings();
   const day = date ?? todayISO();
   const tasks = useTasks(day);
   const habits = useHabits();
@@ -268,28 +310,12 @@ function DaySheet({ date, onClose }: { date: ISODate | null; onClose: () => void
   const doneIds = new Set(logs.map((l) => l.habitId));
   const dayHabits = habits.filter((h) => doneIds.has(h.id!) || (isScheduled(h, day) && h.createdAt <= day));
   const byTime = <T extends { time?: string }>(a: T, b: T) => (a.time ?? '99:99').localeCompare(b.time ?? '99:99');
-  const work = isWorkDay(day, settings);
-  const weeklyDefault = isWeeklyWorkDay(day, settings);
   const empty = !tasks.length && !dayHabits.length && !workouts.length && !reminders.length;
 
   return (
     <BottomSheet open={date !== null} onClose={onClose} title={formatLong(day)}>
       <div className="space-y-5">
-        <button
-          onClick={() => setWorkDayOverride(day, !work, weeklyDefault)}
-          role="switch"
-          aria-checked={work}
-          className="flex w-full items-center gap-3 rounded-2xl bg-canvas px-4 py-3 text-start"
-        >
-          <Briefcase size={20} className="shrink-0" />
-          <span className="flex-1">
-            <span className="block font-semibold">יום עבודה</span>
-            {work !== weeklyDefault && <span className="text-xs text-muted">שונה רק ליום הזה</span>}
-          </span>
-          <span className={`relative h-7 w-12 rounded-full transition ${work ? 'bg-slate-700 dark:bg-slate-200' : 'bg-line'}`}>
-            <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow ${work ? 'end-1' : 'start-1'}`} />
-          </span>
-        </button>
+        <WorkBadge date={day} interactive className="justify-start" />
 
         {empty && <p className="py-2 text-center text-muted">אין כלום מתוכנן ביום הזה</p>}
 
@@ -301,7 +327,7 @@ function DaySheet({ date, onClose }: { date: ISODate | null; onClose: () => void
           </Group>
         )}
         {dayHabits.length > 0 && (
-          <Group title="הרגלים" color={DOT.habits}>
+          <Group title="משימות קבועות" color={DOT.habits}>
             {[...dayHabits].sort(byTime).map((h) => (
               <Row key={h.id} color={DOT.habits} mark={doneIds.has(h.id!) ? 'done' : 'open'} time={h.time} text={`${h.emoji} ${h.name}`} />
             ))}
